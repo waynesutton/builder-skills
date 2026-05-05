@@ -1,10 +1,11 @@
 ---
 name: convex-migrations
 displayName: Convex Migrations
-description: Schema migration strategies for evolving applications including adding new fields, backfilling data, removing deprecated fields, index migrations, and zero-downtime migration patterns
-version: 1.0.0
+description: Schema migration strategies for evolving Convex applications including adding fields, backfilling data, removing deprecated fields, index migrations, and zero-downtime patterns
+version: 1.37.0
 author: Convex
 tags: [convex, migrations, schema, database, data-modeling]
+last-updated: 2026-05-04
 ---
 
 # Convex Migrations
@@ -16,13 +17,23 @@ Evolve your Convex database schema safely with patterns for adding fields, backf
 Before implementing, do not assume; fetch the latest documentation:
 
 - Primary: https://docs.convex.dev/database/schemas
-- Schema Overview: https://docs.convex.dev/database
-- Migration Patterns: https://stack.convex.dev/migrate-data-postgres-to-convex
+- Schema Philosophy: https://docs.convex.dev/database/advanced/schema-philosophy
 - For broader context: https://docs.convex.dev/llms.txt
 
-## Instructions
+## Gotchas
 
-### Migration Philosophy
+Read this before any migration:
+
+- **Schema validation is automatic**: The first push after adding/modifying a schema validates ALL existing documents. If validation fails, the push fails.
+- **Convex is implicitly typed**: Even without `schema.ts`, Convex tracks field types automatically. Type changes create unions like `v.union(v.string(), v.number())`.
+- **Circular references require nullable fields**: You cannot create circular ID references (user → preferences → user) unless one side is nullable.
+- **`npx convex dev` deploys instantly**: Schema changes deploy immediately - no separate migration step.
+- **Data is NOT transformed automatically**: Changing schema doesn't transform existing data. You must backfill explicitly.
+- **Optional fields first**: Always make new fields optional initially. Making them required immediately breaks existing documents.
+- **Indexes are built on deploy**: Adding an index to schema builds it immediately. Deploy before using in queries.
+- **`schemaValidation: false` disables runtime checks**: You'll still get types, but no validation. Use cautiously for rapid prototyping.
+
+## Migration Philosophy
 
 Convex handles schema evolution differently than traditional databases:
 
@@ -30,17 +41,18 @@ Convex handles schema evolution differently than traditional databases:
 - Schema changes deploy instantly with `npx convex dev`
 - Existing data is not automatically transformed
 - Use optional fields and backfill mutations for safe migrations
+- Formalize schema when ready, but Convex tracks types implicitly
+
+**Key insight**: Convex is always typed. Start without schema for prototyping, then formalize. The dashboard shows inferred schemas to help you understand your data.
+
+## Core Migration Patterns
 
 ### Adding New Fields
 
-Start with optional fields, then backfill:
+**Step 1: Add optional field to schema**
 
 ```typescript
-// Step 1: Add optional field to schema
 // convex/schema.ts
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
-
 export default defineSchema({
   users: defineTable({
     name: v.string(),
@@ -51,23 +63,11 @@ export default defineSchema({
 });
 ```
 
-```typescript
-// Step 2: Update code to handle both cases
-// convex/users.ts
-import { query } from "./_generated/server";
-import { v } from "convex/values";
+**Step 2: Update code to handle both cases**
 
+```typescript
 export const getUser = query({
   args: { userId: v.id("users") },
-  returns: v.union(
-    v.object({
-      _id: v.id("users"),
-      name: v.string(),
-      email: v.string(),
-      avatarUrl: v.union(v.string(), v.null()),
-    }),
-    v.null()
-  ),
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
     if (!user) return null;
@@ -83,16 +83,116 @@ export const getUser = query({
 });
 ```
 
+**Step 3: Backfill existing documents** (see "Backfilling Pattern" below)
+
+**Step 4: Make field required** (after backfill completes)
+
 ```typescript
-// Step 3: Backfill existing documents
-// convex/migrations.ts
+export default defineSchema({
+  users: defineTable({
+    name: v.string(),
+    email: v.string(),
+    avatarUrl: v.string(), // Now required
+  }),
+});
+```
+
+### Removing Fields
+
+**Step 1: Stop using the field in queries and mutations**
+
+Mark as deprecated in code comments.
+
+**Step 2: Remove field from schema** (make optional first if needed)
+
+```typescript
+export default defineSchema({
+  posts: defineTable({
+    title: v.string(),
+    content: v.string(),
+    authorId: v.id("users"),
+    // legacyField removed
+  }),
+});
+```
+
+**Step 3: Optionally clean up existing data** (use `db.replace` to remove field entirely)
+
+### Renaming Fields
+
+Renaming is a copy-then-remove operation:
+
+1. Add new field as optional
+2. Update code to read new field with fallback to old
+3. Backfill to copy data from old to new field
+4. Update schema to make new field required
+5. Remove old field from schema and code
+
+### Changing Field Types
+
+Type changes require a transition period with both fields:
+
+1. Add new field with new type as optional
+2. Backfill with type conversion logic
+3. Update code to use new field with fallback
+4. After migration, remove old field and make new required
+
+### Adding Indexes
+
+Add indexes before using them:
+
+```typescript
+// Step 1: Add index to schema
+export default defineSchema({
+  posts: defineTable({
+    title: v.string(),
+    authorId: v.id("users"),
+    publishedAt: v.optional(v.number()),
+    status: v.string(),
+  })
+  .index("by_author", ["authorId"])
+  .index("by_status_and_published", ["status", "publishedAt"]),
+});
+
+// Step 2: Deploy schema (npx convex dev) - index builds automatically
+
+// Step 3: Now use the index in queries
+```
+
+### Handling Circular References
+
+Circular ID references require one side to be nullable:
+
+```typescript
+export default defineSchema({
+  users: defineTable({
+    preferencesId: v.id("preferences"),
+  }),
+  preferences: defineTable({
+    // Make nullable to break the circular reference
+    userId: v.union(v.id("users"), v.null()),
+  }),
+});
+```
+
+Insertion sequence:
+1. Create preferences document (userId: null)
+2. Create user document (preferencesId: ...)
+3. Update preferences document (userId: ...)
+
+## Backfilling Pattern
+
+Use this pattern for safe, resumable backfills:
+
+```typescript
+// convex/migrations/backfillAvatarUrl.ts
 import { internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { v } from "convex/values";
 
+const MIGRATION_NAME = "backfill_avatar_url_v1";
 const BATCH_SIZE = 100;
 
-export const backfillAvatarUrl = internalMutation({
+export const run = internalMutation({
   args: {
     cursor: v.optional(v.string()),
   },
@@ -118,7 +218,7 @@ export const backfillAvatarUrl = internalMutation({
 
     // Schedule next batch if needed
     if (!result.isDone) {
-      await ctx.scheduler.runAfter(0, internal.migrations.backfillAvatarUrl, {
+      await ctx.scheduler.runAfter(0, internal.migrations.backfillAvatarUrl.run, {
         cursor: result.continueCursor,
       });
     }
@@ -135,578 +235,153 @@ function generateDefaultAvatar(name: string): string {
 }
 ```
 
-```typescript
-// Step 4: After backfill completes, make field required
-// convex/schema.ts
-export default defineSchema({
-  users: defineTable({
-    name: v.string(),
-    email: v.string(),
-    avatarUrl: v.string(), // Now required
-  }),
-});
-```
-
-### Removing Fields
-
-Remove field usage before removing from schema:
+**Validation**: After backfill completes, verify no undefined values remain:
 
 ```typescript
-// Step 1: Stop using the field in queries and mutations
-// Mark as deprecated in code comments
-
-// Step 2: Remove field from schema (make optional first if needed)
-// convex/schema.ts
-export default defineSchema({
-  posts: defineTable({
-    title: v.string(),
-    content: v.string(),
-    authorId: v.id("users"),
-    // legacyField: v.optional(v.string()), // Remove this line
-  }),
-});
-
-// Step 3: Optionally clean up existing data
-// convex/migrations.ts
-export const removeDeprecatedField = internalMutation({
-  args: {
-    cursor: v.optional(v.string()),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const result = await ctx.db
-      .query("posts")
-      .paginate({ numItems: 100, cursor: args.cursor ?? null });
-
-    for (const post of result.page) {
-      // Use replace to remove the field entirely
-      const { legacyField, ...rest } = post as typeof post & { legacyField?: string };
-      if (legacyField !== undefined) {
-        await ctx.db.replace(post._id, rest);
-      }
-    }
-
-    if (!result.isDone) {
-      await ctx.scheduler.runAfter(0, internal.migrations.removeDeprecatedField, {
-        cursor: result.continueCursor,
-      });
-    }
-
-    return null;
-  },
-});
-```
-
-### Renaming Fields
-
-Renaming requires copying data to new field, then removing old:
-
-```typescript
-// Step 1: Add new field as optional
-// convex/schema.ts
-export default defineSchema({
-  users: defineTable({
-    userName: v.string(), // Old field
-    displayName: v.optional(v.string()), // New field
-  }),
-});
-
-// Step 2: Update code to read from new field with fallback
-export const getUser = query({
-  args: { userId: v.id("users") },
-  returns: v.object({
-    _id: v.id("users"),
-    displayName: v.string(),
-  }),
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user) throw new Error("User not found");
-
-    return {
-      _id: user._id,
-      // Read new field, fall back to old
-      displayName: user.displayName ?? user.userName,
-    };
-  },
-});
-
-// Step 3: Backfill to copy data
-export const backfillDisplayName = internalMutation({
-  args: { cursor: v.optional(v.string()) },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const result = await ctx.db
-      .query("users")
-      .paginate({ numItems: 100, cursor: args.cursor ?? null });
-
-    for (const user of result.page) {
-      if (user.displayName === undefined) {
-        await ctx.db.patch(user._id, {
-          displayName: user.userName,
-        });
-      }
-    }
-
-    if (!result.isDone) {
-      await ctx.scheduler.runAfter(0, internal.migrations.backfillDisplayName, {
-        cursor: result.continueCursor,
-      });
-    }
-
-    return null;
-  },
-});
-
-// Step 4: After backfill, update schema to make new field required
-// and remove old field
-export default defineSchema({
-  users: defineTable({
-    // userName removed
-    displayName: v.string(),
-  }),
-});
-```
-
-### Adding Indexes
-
-Add indexes before using them in queries:
-
-```typescript
-// Step 1: Add index to schema
-// convex/schema.ts
-export default defineSchema({
-  posts: defineTable({
-    title: v.string(),
-    authorId: v.id("users"),
-    publishedAt: v.optional(v.number()),
-    status: v.string(),
-  })
-    .index("by_author", ["authorId"])
-    // New index
-    .index("by_status_and_published", ["status", "publishedAt"]),
-});
-
-// Step 2: Deploy schema change
-// Run: npx convex dev
-
-// Step 3: Now use the index in queries
-export const getPublishedPosts = query({
+export const validateBackfill = internalQuery({
   args: {},
-  returns: v.array(v.object({
-    _id: v.id("posts"),
-    title: v.string(),
-    publishedAt: v.number(),
-  })),
+  returns: v.number(),
   handler: async (ctx) => {
-    const posts = await ctx.db
-      .query("posts")
-      .withIndex("by_status_and_published", (q) =>
-        q.eq("status", "published")
-      )
-      .order("desc")
-      .take(10);
-
-    return posts
-      .filter((p) => p.publishedAt !== undefined)
-      .map((p) => ({
-        _id: p._id,
-        title: p.title,
-        publishedAt: p.publishedAt!,
-      }));
+    const usersWithoutAvatar = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("avatarUrl"), undefined))
+      .collect();
+    return usersWithoutAvatar.length;
   },
 });
 ```
 
-### Changing Field Types
+## Schema Options
 
-Type changes require careful migration:
+### Disable Schema Validation
+
+Use for rapid prototyping (NOT production):
 
 ```typescript
-// Example: Change from string to number for a "priority" field
-
-// Step 1: Add new field with new type
-// convex/schema.ts
-export default defineSchema({
-  tasks: defineTable({
-    title: v.string(),
-    priority: v.string(), // Old: "low", "medium", "high"
-    priorityLevel: v.optional(v.number()), // New: 1, 2, 3
-  }),
-});
-
-// Step 2: Backfill with type conversion
-export const migratePriorityToNumber = internalMutation({
-  args: { cursor: v.optional(v.string()) },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const result = await ctx.db
-      .query("tasks")
-      .paginate({ numItems: 100, cursor: args.cursor ?? null });
-
-    const priorityMap: Record<string, number> = {
-      low: 1,
-      medium: 2,
-      high: 3,
-    };
-
-    for (const task of result.page) {
-      if (task.priorityLevel === undefined) {
-        await ctx.db.patch(task._id, {
-          priorityLevel: priorityMap[task.priority] ?? 1,
-        });
-      }
-    }
-
-    if (!result.isDone) {
-      await ctx.scheduler.runAfter(0, internal.migrations.migratePriorityToNumber, {
-        cursor: result.continueCursor,
-      });
-    }
-
-    return null;
+export default defineSchema(
+  {
+    // tables
   },
-});
-
-// Step 3: Update code to use new field
-export const getTask = query({
-  args: { taskId: v.id("tasks") },
-  returns: v.object({
-    _id: v.id("tasks"),
-    title: v.string(),
-    priorityLevel: v.number(),
-  }),
-  handler: async (ctx, args) => {
-    const task = await ctx.db.get(args.taskId);
-    if (!task) throw new Error("Task not found");
-
-    const priorityMap: Record<string, number> = {
-      low: 1,
-      medium: 2,
-      high: 3,
-    };
-
-    return {
-      _id: task._id,
-      title: task.title,
-      priorityLevel: task.priorityLevel ?? priorityMap[task.priority] ?? 1,
-    };
-  },
-});
-
-// Step 4: After backfill, update schema
-export default defineSchema({
-  tasks: defineTable({
-    title: v.string(),
-    // priority field removed
-    priorityLevel: v.number(),
-  }),
-});
+  {
+    schemaValidation: false, // No runtime validation, still get types
+  }
+);
 ```
 
-### Migration Runner Pattern
+### Flexible Table Names
 
-Create a reusable migration system:
+Allow tables not in schema for experimentation:
 
 ```typescript
-// convex/schema.ts
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
-
-export default defineSchema({
-  migrations: defineTable({
-    name: v.string(),
-    startedAt: v.number(),
-    completedAt: v.optional(v.number()),
-    status: v.union(
-      v.literal("running"),
-      v.literal("completed"),
-      v.literal("failed")
-    ),
-    error: v.optional(v.string()),
-    processed: v.number(),
-  }).index("by_name", ["name"]),
-
-  // Your other tables...
-});
+export default defineSchema(
+  {
+    // partial schema
+  },
+  {
+    strictTableNameTypes: false, // Allow accessing undefined tables (type: any)
+  }
+);
 ```
 
-```typescript
-// convex/migrations.ts
-import { internalMutation, internalQuery } from "./_generated/server";
-import { internal } from "./_generated/api";
-import { v } from "convex/values";
+**Warning**: These options are for development only. Enable both in production.
 
-// Check if migration has run
-export const hasMigrationRun = internalQuery({
-  args: { name: v.string() },
-  returns: v.boolean(),
-  handler: async (ctx, args) => {
-    const migration = await ctx.db
-      .query("migrations")
-      .withIndex("by_name", (q) => q.eq("name", args.name))
-      .first();
-    return migration?.status === "completed";
-  },
-});
+## Zero-Downtime Migration Workflow
 
-// Start a migration
-export const startMigration = internalMutation({
-  args: { name: v.string() },
-  returns: v.id("migrations"),
-  handler: async (ctx, args) => {
-    // Check if already exists
-    const existing = await ctx.db
-      .query("migrations")
-      .withIndex("by_name", (q) => q.eq("name", args.name))
-      .first();
+1. **Prepare phase** (dev):
+   - Read schema references in `references/schema.yaml`
+   - Add new optional fields to schema
+   - Write backfill migration with error handling
+   - Update code to handle both old and new data
+   - Test thoroughly with `convex test`
 
-    if (existing) {
-      if (existing.status === "completed") {
-        throw new Error(`Migration ${args.name} already completed`);
-      }
-      if (existing.status === "running") {
-        throw new Error(`Migration ${args.name} already running`);
-      }
-      // Reset failed migration
-      await ctx.db.patch(existing._id, {
-        status: "running",
-        startedAt: Date.now(),
-        error: undefined,
-        processed: 0,
-      });
-      return existing._id;
-    }
+2. **Deploy phase** (dev → prod):
+   - Deploy schema change to production
+   - Schema validates automatically (first push)
+   - If validation fails, rollback and fix
 
-    return await ctx.db.insert("migrations", {
-      name: args.name,
-      startedAt: Date.now(),
-      status: "running",
-      processed: 0,
-    });
-  },
-});
+3. **Backfill phase** (prod):
+   - Run backfill migration in batches
+   - Monitor for errors
+   - Validate completion with query
 
-// Update migration progress
-export const updateMigrationProgress = internalMutation({
-  args: {
-    migrationId: v.id("migrations"),
-    processed: v.number(),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const migration = await ctx.db.get(args.migrationId);
-    if (!migration) return null;
+4. **Cleanup phase** (prod):
+   - Make fields required in schema
+   - Remove deprecated fields
+   - Update code to only use new schema
+   - Deploy final changes
 
-    await ctx.db.patch(args.migrationId, {
-      processed: migration.processed + args.processed,
-    });
+## Validation Checklist
 
-    return null;
-  },
-});
+Before and after migrations:
 
-// Complete a migration
-export const completeMigration = internalMutation({
-  args: { migrationId: v.id("migrations") },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.migrationId, {
-      status: "completed",
-      completedAt: Date.now(),
-    });
-    return null;
-  },
-});
+**Pre-migration:**
+- [ ] Schema validation enabled (dev: yes, prod: yes)
+- [ ] New fields marked optional
+- [ ] Code handles undefined values
+- [ ] Backfill migration written and tested
+- [ ] Database backup exists (if using external backup)
 
-// Fail a migration
-export const failMigration = internalMutation({
-  args: {
-    migrationId: v.id("migrations"),
-    error: v.string(),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.migrationId, {
-      status: "failed",
-      error: args.error,
-    });
-    return null;
-  },
-});
-```
+**Post-migration:**
+- [ ] Backfill completed successfully (query confirms)
+- [ ] No validation errors in logs
+- [ ] All functions use new schema correctly
+- [ ] Performance tests pass
+- [ ] Deprecated fields removed from code
 
-```typescript
-// convex/migrations/addUserTimestamps.ts
-import { internalMutation } from "../_generated/server";
-import { internal } from "../_generated/api";
-import { v } from "convex/values";
+## Common Migration Pitfalls
 
-const MIGRATION_NAME = "add_user_timestamps_v1";
-const BATCH_SIZE = 100;
-
-export const run = internalMutation({
-  args: {
-    migrationId: v.optional(v.id("migrations")),
-    cursor: v.optional(v.string()),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    // Initialize migration on first run
-    let migrationId = args.migrationId;
-    if (!migrationId) {
-      const hasRun = await ctx.runQuery(internal.migrations.hasMigrationRun, {
-        name: MIGRATION_NAME,
-      });
-      if (hasRun) {
-        console.log(`Migration ${MIGRATION_NAME} already completed`);
-        return null;
-      }
-      migrationId = await ctx.runMutation(internal.migrations.startMigration, {
-        name: MIGRATION_NAME,
-      });
-    }
-
-    try {
-      const result = await ctx.db
-        .query("users")
-        .paginate({ numItems: BATCH_SIZE, cursor: args.cursor ?? null });
-
-      let processed = 0;
-      for (const user of result.page) {
-        if (user.createdAt === undefined) {
-          await ctx.db.patch(user._id, {
-            createdAt: user._creationTime,
-            updatedAt: user._creationTime,
-          });
-          processed++;
-        }
-      }
-
-      // Update progress
-      await ctx.runMutation(internal.migrations.updateMigrationProgress, {
-        migrationId,
-        processed,
-      });
-
-      // Continue or complete
-      if (!result.isDone) {
-        await ctx.scheduler.runAfter(0, internal.migrations.addUserTimestamps.run, {
-          migrationId,
-          cursor: result.continueCursor,
-        });
-      } else {
-        await ctx.runMutation(internal.migrations.completeMigration, {
-          migrationId,
-        });
-        console.log(`Migration ${MIGRATION_NAME} completed`);
-      }
-    } catch (error) {
-      await ctx.runMutation(internal.migrations.failMigration, {
-        migrationId,
-        error: String(error),
-      });
-      throw error;
-    }
-
-    return null;
-  },
-});
-```
-
-## Examples
-
-### Schema with Migration Support
-
-```typescript
-// convex/schema.ts
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
-
-export default defineSchema({
-  // Migration tracking
-  migrations: defineTable({
-    name: v.string(),
-    startedAt: v.number(),
-    completedAt: v.optional(v.number()),
-    status: v.union(
-      v.literal("running"),
-      v.literal("completed"),
-      v.literal("failed")
-    ),
-    error: v.optional(v.string()),
-    processed: v.number(),
-  }).index("by_name", ["name"]),
-
-  // Users table with evolved schema
-  users: defineTable({
-    // Original fields
-    name: v.string(),
-    email: v.string(),
-    
-    // Added in migration v1
-    createdAt: v.optional(v.number()),
-    updatedAt: v.optional(v.number()),
-    
-    // Added in migration v2
-    avatarUrl: v.optional(v.string()),
-    
-    // Added in migration v3
-    settings: v.optional(v.object({
-      theme: v.string(),
-      notifications: v.boolean(),
-    })),
-  })
-    .index("by_email", ["email"])
-    .index("by_createdAt", ["createdAt"]),
-
-  // Posts table with indexes for common queries
-  posts: defineTable({
-    title: v.string(),
-    content: v.string(),
-    authorId: v.id("users"),
-    status: v.union(
-      v.literal("draft"),
-      v.literal("published"),
-      v.literal("archived")
-    ),
-    publishedAt: v.optional(v.number()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_author", ["authorId"])
-    .index("by_status", ["status"])
-    .index("by_author_and_status", ["authorId", "status"])
-    .index("by_publishedAt", ["publishedAt"]),
-});
-```
-
-## Best Practices
-
-- Never run `npx convex deploy` unless explicitly instructed
-- Never run any git commands unless explicitly instructed
-- Always start with optional fields when adding new data
-- Backfill data in batches to avoid timeouts
-- Test migrations on development before production
-- Keep track of completed migrations to avoid re-running
-- Update code to handle both old and new data during transition
-- Remove deprecated fields only after all code stops using them
-- Use pagination for large datasets
-- Add appropriate indexes before running queries on new fields
-
-## Common Pitfalls
-
-1. **Making new fields required immediately** - Breaks existing documents
-2. **Not handling undefined values** - Causes runtime errors
-3. **Large batch sizes** - Causes function timeouts
-4. **Forgetting to update indexes** - Queries fail or perform poorly
-5. **Running migrations without tracking** - May run multiple times
+1. **Making fields required immediately** - Breaks existing documents without backfill
+2. **Not handling undefined values** - Runtime errors in queries/mutations
+3. **Large batch sizes** - Function timeouts (> 4GB seconds or 16MB output)
+4. **Forgetting indexes** - Slow queries on new fields
+5. **Running backfills without tracking** - May run multiple times idempotently
 6. **Removing fields before code update** - Breaks existing functionality
-7. **Not testing on development** - Production data issues
+7. **Not testing in dev first** - Production data corruption risk
+8. **Circular references without nullable** - Cannot create documents due to validation
+
+## Progressive Disclosure
+
+For detailed examples and advanced patterns, load references as needed:
+
+- **Full migration runner with tracking**: Read `references/migration-runner.md` when you need production-grade migration management
+- **Search and vector indexes**: Read `references/index-migrations.md` when adding search or vector search capabilities
+- **Complex type changes**: Read `references/type-migrations.md` for union handling and record type migrations
+- **Multi-table migrations**: Read `references/relational-migrations.md` for migrations involving foreign keys and relationships
+
+## Additional Validators
+
+### Record Objects (dynamic keys)
+
+```typescript
+defineTable({
+  metadata: v.record(v.string(), v.any()),
+});
+```
+
+### Any Type
+
+```typescript
+defineTable({
+  flexibleField: v.any(),
+});
+```
+
+### Literals and Unions
+
+```typescript
+defineTable({
+  status: v.union(
+    v.literal("draft"),
+    v.literal("published"),
+    v.literal("archived")
+  ),
+});
+```
 
 ## References
 
-- Convex Documentation: https://docs.convex.dev/
+- Convex Schemas: https://docs.convex.dev/database/schemas
+- Schema Philosophy: https://docs.convex.dev/database/advanced/schema-philosophy
 - Convex LLMs.txt: https://docs.convex.dev/llms.txt
-- Schemas: https://docs.convex.dev/database/schemas
+- Data Types: https://docs.convex.dev/database/types
 - Database Overview: https://docs.convex.dev/database
-- Migration Patterns: https://stack.convex.dev/migrate-data-postgres-to-convex

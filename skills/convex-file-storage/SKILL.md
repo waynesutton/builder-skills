@@ -2,9 +2,10 @@
 name: convex-file-storage
 displayName: Convex File Storage
 description: Complete file handling including upload flows, serving files via URL, storing generated files from actions, deletion, and accessing file metadata from system tables
-version: 1.0.0
+version: 1.37.0
 author: Convex
 tags: [convex, file-storage, uploads, images, files]
+last-updated: 2026-05-04
 ---
 
 # Convex File Storage
@@ -18,6 +19,9 @@ Before implementing, do not assume; fetch the latest documentation:
 - Primary: https://docs.convex.dev/file-storage
 - Upload Files: https://docs.convex.dev/file-storage/upload-files
 - Serve Files: https://docs.convex.dev/file-storage/serve-files
+- Delete Files: https://docs.convex.dev/file-storage/delete-files
+- File Metadata: https://docs.convex.dev/file-storage/file-metadata
+- Store Files: https://docs.convex.dev/file-storage/store-files
 - For broader context: https://docs.convex.dev/llms.txt
 
 ## Instructions
@@ -45,6 +49,8 @@ export const generateUploadUrl = mutation({
   },
 });
 ```
+
+Upload URLs expire in 1 hour - fetch them shortly before uploading to ensure validity.
 
 ### Client-Side Upload
 
@@ -253,6 +259,99 @@ export const generateImage = action({
 });
 ```
 
+### Uploading Files via HTTP Action
+
+For tighter control over uploads (files under 20MB), use HTTP actions:
+
+```typescript
+// convex/http.ts
+import { httpRouter } from "convex/server";
+import { httpAction } from "./_generated/server";
+import { api } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
+
+const http = httpRouter();
+
+http.route({
+  path: "/uploadFile",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    // Step 1: Store the file
+    const blob = await request.blob();
+    const storageId = await ctx.storage.store(blob);
+
+    // Step 2: Save the storage ID to the database via a mutation
+    const author = new URL(request.url).searchParams.get("author");
+    if (author === null) {
+      return new Response("Author is required", {
+        status: 400,
+      });
+    }
+
+    await ctx.runMutation(api.files.saveFile, { storageId, author });
+
+    // Step 3: Return a response with the correct CORS headers
+    return new Response(null, {
+      status: 200,
+      headers: new Headers({
+        "Access-Control-Allow-Origin": process.env.CLIENT_ORIGIN!,
+        Vary: "origin",
+      }),
+    });
+  }),
+});
+
+// Pre-flight request for /uploadFile
+http.route({
+  path: "/uploadFile",
+  method: "OPTIONS",
+  handler: httpAction(async (_, request) => {
+    const headers = request.headers;
+    if (
+      headers.get("Origin") !== null &&
+      headers.get("Access-Control-Request-Method") !== null &&
+      headers.get("Access-Control-Request-Headers") !== null
+    ) {
+      return new Response(null, {
+        headers: new Headers({
+          "Access-Control-Allow-Origin": process.env.CLIENT_ORIGIN!,
+          "Access-Control-Allow-Methods": "POST",
+          "Access-Control-Allow-Headers": "Content-Type, Digest",
+          "Access-Control-Max-Age": "86400",
+        }),
+      });
+    } else {
+      return new Response();
+    }
+  }),
+});
+```
+
+### Serving Files via HTTP Action
+
+For access control at serve time (files under 20MB), serve from HTTP actions:
+
+```typescript
+// convex/http.ts
+http.route({
+  path: "/getFile",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const { searchParams } = new URL(request.url);
+    const storageId = searchParams.get("storageId")! as Id<"_storage">;
+
+    const blob = await ctx.storage.get(storageId);
+    if (blob === null) {
+      return new Response("File not found", {
+        status: 404,
+      });
+    }
+
+    return new Response(blob);
+  }),
+});
+```
+
 ### Accessing File Metadata
 
 ```typescript
@@ -260,14 +359,6 @@ export const generateImage = action({
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
-
-type FileMetadata = {
-  _id: Id<"_storage">;
-  _creationTime: number;
-  contentType?: string;
-  sha256: string;
-  size: number;
-};
 
 export const getFileMetadata = query({
   args: { storageId: v.id("_storage") },
@@ -282,8 +373,15 @@ export const getFileMetadata = query({
     v.null()
   ),
   handler: async (ctx, args) => {
-    const metadata = await ctx.db.system.get(args.storageId);
-    return metadata as FileMetadata | null;
+    return await ctx.db.system.get("_storage", args.storageId);
+  },
+});
+
+// List all files (for admin/debugging)
+export const listAllFiles = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.system.query("_storage").collect();
   },
 });
 ```
@@ -313,132 +411,6 @@ export const deleteFile = mutation({
 });
 ```
 
-### Image Upload with Preview
-
-```typescript
-import { useMutation } from "convex/react";
-import { api } from "../convex/_generated/api";
-import { useState, useRef } from "react";
-
-function ImageUploader({ onUpload }: { onUpload: (id: Id<"files">) => void }) {
-  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
-  const saveFile = useMutation(api.files.saveFile);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
-      return;
-    }
-
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert("File size must be less than 10MB");
-      return;
-    }
-
-    // Show preview
-    const reader = new FileReader();
-    reader.onload = (e) => setPreview(e.target?.result as string);
-    reader.readAsDataURL(file);
-
-    // Upload
-    setUploading(true);
-    try {
-      const uploadUrl = await generateUploadUrl();
-      const result = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-
-      const { storageId } = await result.json();
-      const fileId = await saveFile({
-        storageId,
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-      });
-
-      onUpload(fileId);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  return (
-    <div>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileSelect}
-        style={{ display: "none" }}
-      />
-      
-      <button
-        onClick={() => inputRef.current?.click()}
-        disabled={uploading}
-      >
-        {uploading ? "Uploading..." : "Select Image"}
-      </button>
-
-      {preview && (
-        <img
-          src={preview}
-          alt="Preview"
-          style={{ maxWidth: 200, marginTop: 10 }}
-        />
-      )}
-    </div>
-  );
-}
-```
-
-## Examples
-
-### Schema for File Storage
-
-```typescript
-// convex/schema.ts
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
-
-export default defineSchema({
-  files: defineTable({
-    storageId: v.id("_storage"),
-    fileName: v.string(),
-    fileType: v.string(),
-    fileSize: v.number(),
-    uploadedBy: v.id("users"),
-    uploadedAt: v.number(),
-  })
-    .index("by_user", ["uploadedBy"])
-    .index("by_type", ["fileType"]),
-
-  // User avatars
-  users: defineTable({
-    name: v.string(),
-    email: v.string(),
-    avatarStorageId: v.optional(v.id("_storage")),
-  }),
-
-  // Posts with images
-  posts: defineTable({
-    authorId: v.id("users"),
-    content: v.string(),
-    imageStorageIds: v.array(v.id("_storage")),
-    createdAt: v.number(),
-  }).index("by_author", ["authorId"]),
-});
-```
-
 ## Best Practices
 
 - Never run `npx convex deploy` unless explicitly instructed
@@ -449,6 +421,9 @@ export default defineSchema({
 - Delete storage files when deleting database references
 - Use appropriate Content-Type headers when uploading
 - Consider image optimization for large images
+- Fetch upload URLs shortly before use (they expire in 1 hour)
+- Use upload URLs for files larger than 20MB (HTTP actions limited to 20MB)
+- Upload POST requests have a 2-minute timeout
 
 ## Common Pitfalls
 
@@ -456,7 +431,12 @@ export default defineSchema({
 2. **Forgetting to delete storage** - Orphaned files waste storage
 3. **Not validating file types** - Security risk for malicious uploads
 4. **Large file uploads without progress** - Poor UX for users
-5. **Using deprecated getMetadata** - Use ctx.db.system.get instead
+5. **Using deprecated getMetadata** - Use `ctx.db.system.get("_storage", storageId)` instead
+6. **Wrong metadata access pattern** - Must pass table name: `ctx.db.system.get("_storage", storageId)`
+7. **Stale upload URLs** - Fetch URLs shortly before use (expire in 1 hour)
+8. **HTTP action size limits** - Requests and responses limited to 20MB
+9. **Missing CORS headers** - HTTP action uploads will fail without proper CORS configuration
+10. **Not handling null blob** - `ctx.storage.get()` returns null for non-existent files
 
 ## References
 
@@ -465,3 +445,6 @@ export default defineSchema({
 - File Storage: https://docs.convex.dev/file-storage
 - Upload Files: https://docs.convex.dev/file-storage/upload-files
 - Serve Files: https://docs.convex.dev/file-storage/serve-files
+- Delete Files: https://docs.convex.dev/file-storage/delete-files
+- File Metadata: https://docs.convex.dev/file-storage/file-metadata
+- Store Files: https://docs.convex.dev/file-storage/store-files

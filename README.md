@@ -293,6 +293,40 @@ Specific rules to follow
 Additional resources
 ```
 
+## Skill Versioning
+
+Skills maintain two important metadata fields in their frontmatter:
+
+### Version Field
+
+The `version` field should **always match the Convex library version** the skill was tested against and updated for. This ensures compatibility with the Convex APIs referenced in the skill content.
+
+- When updating skill content to reflect new Convex APIs or changes, update the `version` to the corresponding Convex release
+- Example: If updating skills for Convex v1.40.0 features, set `version: 1.40.0`
+- Check current Convex version: `npm view convex version`
+
+### Last-Updated Field
+
+The `last-updated` field tracks when the skill's **instructional content** was last reviewed or modified, in ISO 8601 format (YYYY-MM-DD).
+
+- Update this field whenever you modify the skill's instructions, examples, or best practices
+- Content updates that don't involve Convex API changes shouldn't require a version bump
+- Use today's date: `last-updated: 2026-05-05`
+
+### Keeping Them in Sync
+
+When updating a skill to cover a new Convex release, update both fields:
+
+```yaml
+---
+name: my-skill
+version: 1.40.0        # Convex version this skill targets
+last-updated: 2026-05-05  # Date of content update
+---
+```
+
+This makes it easy to see at a glance which skills have been updated for which Convex versions.
+
 ## AI Integration Files
 
 - `AGENTS.md` - Agent-facing documentation

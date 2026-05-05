@@ -2,9 +2,10 @@
 name: convex-functions
 displayName: Convex Functions
 description: Writing queries, mutations, actions, and HTTP actions with proper argument validation, error handling, internal functions, and runtime considerations
-version: 1.0.0
+version: 1.37.0
 author: Convex
 tags: [convex, functions, queries, mutations, actions, http]
+last-updated: 2026-05-04
 ---
 
 # Convex Functions
@@ -16,7 +17,7 @@ Master Convex functions including queries, mutations, actions, and HTTP endpoint
 All examples in this skill comply with @convex-dev/eslint-plugin rules:
 
 - Object syntax with `handler` property
-- Argument validators on all functions
+- Argument validators on all public functions
 - Explicit table names in database operations
 
 See the Code Quality section in [convex-best-practices](../convex-best-practices/SKILL.md) for linting setup.
@@ -30,6 +31,11 @@ Before implementing, do not assume; fetch the latest documentation:
 - Mutation Functions: https://docs.convex.dev/functions/mutation-functions
 - Actions: https://docs.convex.dev/functions/actions
 - HTTP Actions: https://docs.convex.dev/functions/http-actions
+- Internal Functions: https://docs.convex.dev/functions/internal-functions
+- Validation: https://docs.convex.dev/functions/validation
+- Error Handling: https://docs.convex.dev/functions/error-handling
+- Bundling: https://docs.convex.dev/functions/bundling
+- Runtimes: https://docs.convex.dev/functions/runtimes
 - For broader context: https://docs.convex.dev/llms.txt
 
 ## Instructions
@@ -45,7 +51,7 @@ Before implementing, do not assume; fetch the latest documentation:
 
 ### Queries
 
-Queries are reactive, cached, and read-only:
+Queries are reactive, cached, and read-only. They must be deterministic.
 
 ```typescript
 import { query } from "./_generated/server";
@@ -53,15 +59,6 @@ import { v } from "convex/values";
 
 export const getUser = query({
   args: { userId: v.id("users") },
-  returns: v.union(
-    v.object({
-      _id: v.id("users"),
-      _creationTime: v.number(),
-      name: v.string(),
-      email: v.string(),
-    }),
-    v.null(),
-  ),
   handler: async (ctx, args) => {
     return await ctx.db.get("users", args.userId);
   },
@@ -70,14 +67,6 @@ export const getUser = query({
 // Query with index
 export const listUserTasks = query({
   args: { userId: v.id("users") },
-  returns: v.array(
-    v.object({
-      _id: v.id("tasks"),
-      _creationTime: v.number(),
-      title: v.string(),
-      completed: v.boolean(),
-    }),
-  ),
   handler: async (ctx, args) => {
     return await ctx.db
       .query("tasks")
@@ -90,7 +79,7 @@ export const listUserTasks = query({
 
 ### Mutations
 
-Mutations modify the database and are transactional:
+Mutations modify the database and are transactional. They must be deterministic.
 
 ```typescript
 import { mutation } from "./_generated/server";
@@ -102,9 +91,7 @@ export const createTask = mutation({
     title: v.string(),
     userId: v.id("users"),
   },
-  returns: v.id("tasks"),
   handler: async (ctx, args) => {
-    // Validate user exists
     const user = await ctx.db.get("users", args.userId);
     if (!user) {
       throw new ConvexError("User not found");
@@ -121,66 +108,72 @@ export const createTask = mutation({
 
 export const deleteTask = mutation({
   args: { taskId: v.id("tasks") },
-  returns: v.null(),
   handler: async (ctx, args) => {
     await ctx.db.delete("tasks", args.taskId);
-    return null;
   },
 });
 ```
 
 ### Actions
 
-Actions can call external APIs but have no direct database access:
+Actions can call external APIs but have no direct database access. They can run in the default Convex runtime or Node.js.
+
+**Default runtime (no "use node")**: Supports `fetch`, no cold starts, 64MB memory limit
+**Node.js runtime (with "use node")**: Full Node.js API, cold starts, 512MB memory limit
 
 ```typescript
-"use node";
-
 import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 
+// Default runtime - uses fetch directly
 export const sendEmail = action({
   args: {
     to: v.string(),
     subject: v.string(),
     body: v.string(),
   },
-  returns: v.object({ success: v.boolean() }),
   handler: async (ctx, args) => {
-    // Call external API
     const response = await fetch("https://api.email.com/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(args),
     });
-
     return { success: response.ok };
   },
 });
 
-// Action calling queries and mutations
+// Node.js runtime - for Node.js-specific libraries
+"use node";
+
+import { action } from "./_generated/server";
+import sharp from "sharp";
+
+export const resizeImage = action({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, args) => {
+    const url = await ctx.storage.getUrl(args.storageId);
+    const response = await fetch(url);
+    const buffer = await response.arrayBuffer();
+    const resized = await sharp(buffer).resize(300, 300).toBuffer();
+    return await ctx.storage.store(new Uint8Array(resized));
+  },
+});
+
+// Best practice: batch database access into single calls
 export const processOrder = action({
   args: { orderId: v.id("orders") },
-  returns: v.null(),
   handler: async (ctx, args) => {
-    // Read data via query
     const order = await ctx.runQuery(api.orders.get, { orderId: args.orderId });
-
     if (!order) {
       throw new Error("Order not found");
     }
 
-    // Call external payment API
     const paymentResult = await processPayment(order);
-
-    // Update database via mutation
     await ctx.runMutation(internal.orders.updateStatus, {
       orderId: args.orderId,
       status: paymentResult.success ? "paid" : "failed",
     });
-
-    return null;
   },
 });
 ```
@@ -205,14 +198,11 @@ http.route({
     const signature = request.headers.get("stripe-signature");
     const body = await request.text();
 
-    // Verify webhook signature
     if (!verifyStripeSignature(body, signature)) {
       return new Response("Invalid signature", { status: 401 });
     }
 
     const event = JSON.parse(body);
-
-    // Process webhook
     await ctx.runMutation(internal.payments.handleWebhook, {
       eventType: event.type,
       data: event.data,
@@ -247,7 +237,12 @@ export default http;
 
 ### Internal Functions
 
-Use internal functions for sensitive operations:
+Internal functions can only be called from other Convex functions, not from clients. Use them for:
+
+- Sensitive operations that shouldn't be callable directly
+- Helper functions called by actions via `runQuery`/`runMutation`
+- Scheduled functions
+- Functions run from dashboard or CLI
 
 ```typescript
 import {
@@ -257,46 +252,37 @@ import {
 } from "./_generated/server";
 import { v } from "convex/values";
 
-// Only callable from other Convex functions
 export const _updateUserCredits = internalMutation({
   args: {
     userId: v.id("users"),
     amount: v.number(),
   },
-  returns: v.null(),
   handler: async (ctx, args) => {
     const user = await ctx.db.get("users", args.userId);
-    if (!user) return null;
+    if (!user) return;
 
     await ctx.db.patch("users", args.userId, {
       credits: (user.credits || 0) + args.amount,
     });
-    return null;
   },
 });
 
 // Call internal function from action
 export const purchaseCredits = action({
   args: { userId: v.id("users"), amount: v.number() },
-  returns: v.null(),
   handler: async (ctx, args) => {
-    // Process payment externally
     await processPayment(args.amount);
-
-    // Update credits via internal mutation
     await ctx.runMutation(internal.users._updateUserCredits, {
       userId: args.userId,
       amount: args.amount,
     });
-
-    return null;
   },
 });
 ```
 
 ### Scheduling Functions
 
-Schedule functions to run later:
+Schedule functions to run later using `ctx.scheduler`:
 
 ```typescript
 import { mutation, internalMutation } from "./_generated/server";
@@ -309,7 +295,6 @@ export const scheduleReminder = mutation({
     message: v.string(),
     delayMs: v.number(),
   },
-  returns: v.id("_scheduled_functions"),
   handler: async (ctx, args) => {
     return await ctx.scheduler.runAfter(
       args.delayMs,
@@ -324,14 +309,12 @@ export const sendReminder = internalMutation({
     userId: v.id("users"),
     message: v.string(),
   },
-  returns: v.null(),
   handler: async (ctx, args) => {
     await ctx.db.insert("notifications", {
       userId: args.userId,
       message: args.message,
       sentAt: Date.now(),
     });
-    return null;
   },
 });
 ```
@@ -347,22 +330,11 @@ import { v } from "convex/values";
 import { ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 
-const messageValidator = v.object({
-  _id: v.id("messages"),
-  _creationTime: v.number(),
-  channelId: v.id("channels"),
-  authorId: v.id("users"),
-  content: v.string(),
-  editedAt: v.optional(v.number()),
-});
-
-// Public query
 export const list = query({
   args: {
     channelId: v.id("channels"),
     limit: v.optional(v.number()),
   },
-  returns: v.array(messageValidator),
   handler: async (ctx, args) => {
     const limit = args.limit ?? 50;
     return await ctx.db
@@ -373,14 +345,12 @@ export const list = query({
   },
 });
 
-// Public mutation
 export const send = mutation({
   args: {
     channelId: v.id("channels"),
     authorId: v.id("users"),
     content: v.string(),
   },
-  returns: v.id("messages"),
   handler: async (ctx, args) => {
     if (args.content.trim().length === 0) {
       throw new ConvexError("Message cannot be empty");
@@ -392,7 +362,6 @@ export const send = mutation({
       content: args.content.trim(),
     });
 
-    // Schedule notification
     await ctx.scheduler.runAfter(0, internal.messages.notifySubscribers, {
       channelId: args.channelId,
       messageId,
@@ -402,15 +371,12 @@ export const send = mutation({
   },
 });
 
-// Internal mutation
 export const notifySubscribers = internalMutation({
   args: {
     channelId: v.id("channels"),
     messageId: v.id("messages"),
   },
-  returns: v.null(),
   handler: async (ctx, args) => {
-    // Get channel subscribers and notify them
     const subscribers = await ctx.db
       .query("subscriptions")
       .withIndex("by_channel", (q) => q.eq("channelId", args.channelId))
@@ -423,30 +389,126 @@ export const notifySubscribers = internalMutation({
         read: false,
       });
     }
-    return null;
   },
 });
 ```
 
+## Validation
+
+Always validate arguments on public functions for security. TypeScript types don't protect at runtime.
+
+```typescript
+import { v } from "convex/values";
+
+export const createUser = mutation({
+  args: {
+    name: v.string(),
+    email: v.string(),
+    age: v.optional(v.number()),
+    role: v.union(v.literal("admin"), v.literal("user")),
+  },
+  handler: async (ctx, args) => {
+    // args are validated automatically
+  },
+});
+```
+
+**Supported types**: `v.string()`, `v.number()`, `v.boolean()`, `v.null()`, `v.id()`, `v.int64()`, `v.bytes()`, `v.array()`, `v.object()`, `v.record()`, `v.union()`, `v.literal()`, `v.optional()`, `v.any()`, `v.email()`, `v.url()`
+
+## Error Handling
+
+Use `ConvexError` for expected failures (validation errors, user-facing messages):
+
+```typescript
+import { ConvexError } from "convex/values";
+
+export const transferFunds = mutation({
+  args: { from: v.id("users"), to: v.id("users"), amount: v.number() },
+  handler: async (ctx, args) => {
+    const sender = await ctx.db.get("users", args.from);
+    if (!sender || sender.balance < args.amount) {
+      throw new ConvexError("Insufficient funds");
+    }
+  },
+});
+```
+
+**Query errors**: Use React error boundaries to catch
+**Mutation errors**: Caught by promises, optimistic updates roll back
+**Action errors**: Not retried automatically (side effects), caller must handle
+
+## Bundling
+
+Convex bundles your code with esbuild automatically:
+
+- Default runtime: Most browser-compatible packages work
+- Node.js runtime: Can mark packages as external in `convex.json`:
+```json
+{
+  "node": {
+    "externalPackages": ["sharp", "aws-sdk"]
+  }
+}
+```
+
+**Bundle size limit**: 32MiB total. External packages add: 45MiB zipped, 240MiB unzipped limit.
+
+**Troubleshooting large bundles**:
+```bash
+npx convex dev --once --debug-bundle-path /tmp/myBundle
+npx source-map-explorer /tmp/myBundle/**/*.js
+```
+
+## Runtimes
+
+**Default Convex Runtime** (recommended for most cases):
+- No cold starts
+- Browser-like APIs (`fetch`, `crypto`, streams)
+- 64MB memory limit
+- Deterministic (Math.random, Date.now seeded)
+
+**Node.js Runtime** (use `"use node"`):
+- Full Node.js API (fs, child_process, etc.)
+- Cold starts on first execution
+- 512MB memory limit
+- Use for libraries like sharp, pdf-parse, or Node.js-specific APIs
+- Configure Node.js version in `convex.json`: supports Node 20 and 22
+
 ## Best Practices
 
-- Never run `npx convex deploy` unless explicitly instructed
-- Never run any git commands unless explicitly instructed
-- Always define args and returns validators
-- Use queries for read operations (they are cached and reactive)
-- Use mutations for write operations (they are transactional)
-- Use actions only when calling external APIs
-- Use internal functions for sensitive operations
-- Add `"use node";` at the top of action files using Node.js APIs
-- Handle errors with ConvexError for user-facing messages
+- **Queries**: Use for reads (cached, reactive)
+- **Mutations**: Use for writes (transactional, deterministic)
+- **Actions**: Only for external APIs (can have side effects)
+- **Internal functions**: For sensitive operations or helpers
+- **Validation**: Always validate args on public functions
+- **Error handling**: Use ConvexError for expected failures
+- **Avoid**: Multiple `runQuery`/`runMutation` in actions (batch into single call)
+- **Avoid**: `await ctx.runAction` (use helper functions instead)
+- **Anti-pattern**: Calling actions directly from client (use mutation → schedule action)
+- **Performance**: Use indexes to avoid full table scans
+
+## Gotchas
+
+1. **"use node" files** cannot contain queries/mutations (only actions)
+2. **"use node" files** cannot be imported by non-"use node" files
+3. **Actions from single client** run in parallel (not queued like mutations)
+4. **Read/write limits**: Functions have limits on data accessed per execution
+5. **Undefined returns**: Convex converts `undefined` to `null` on client
+6. **Extra properties**: Validators throw on undeclared properties (unlike TypeScript)
+7. **External packages**: Version installed in local node_modules determines server version
+8. **Date.now()**: Frozen during function execution (same value throughout)
+9. **Math.random()**: Seeded for determinism in queries/mutations
 
 ## Common Pitfalls
 
 1. **Using actions for database operations** - Use queries/mutations instead
 2. **Calling external APIs from queries/mutations** - Use actions
-3. **Forgetting to add "use node"** - Required for Node.js APIs in actions
-4. **Missing return validators** - Always specify returns
-5. **Not using internal functions for sensitive logic** - Protect with internalMutation
+3. **Forgetting "use node"** - Required for Node.js APIs in actions
+4. **Not using internal functions** - Expose sensitive operations directly
+5. **Multiple runQuery/runMutation in actions** - Batch into single internal function
+6. **Calling actions from client** - Use mutation + scheduler pattern instead
+7. **Assuming setTimeout/ setInterval work** - Use scheduler instead
+8. **Not handling action errors** - Actions not retried automatically
 
 ## References
 
@@ -456,3 +518,8 @@ export const notifySubscribers = internalMutation({
 - Query Functions: https://docs.convex.dev/functions/query-functions
 - Mutation Functions: https://docs.convex.dev/functions/mutation-functions
 - Actions: https://docs.convex.dev/functions/actions
+- Internal Functions: https://docs.convex.dev/functions/internal-functions
+- Validation: https://docs.convex.dev/functions/validation
+- Error Handling: https://docs.convex.dev/functions/error-handling
+- Bundling: https://docs.convex.dev/functions/bundling
+- Runtimes: https://docs.convex.dev/functions/runtimes

@@ -2,9 +2,10 @@
 name: convex-cron-jobs
 displayName: Convex Cron Jobs
 description: Scheduled function patterns for background tasks including interval scheduling, cron expressions, job monitoring, retry strategies, and best practices for long-running tasks
-version: 1.0.0
+version: 1.37.0
 author: Convex
 tags: [convex, cron, scheduling, background-jobs, automation]
+last-updated: 2026-05-04
 ---
 
 # Convex Cron Jobs
@@ -18,7 +19,18 @@ Before implementing, do not assume; fetch the latest documentation:
 - Primary: https://docs.convex.dev/scheduling/cron-jobs
 - Scheduling Overview: https://docs.convex.dev/scheduling
 - Scheduled Functions: https://docs.convex.dev/scheduling/scheduled-functions
+- Error Handling: https://docs.convex.dev/functions/error-handling
 - For broader context: https://docs.convex.dev/llms.txt
+
+## Gotchas
+
+- **At most one run of each cron job can execute at any moment** — if a cron job takes too long to complete, subsequent runs will be skipped to avoid falling behind. This is logged in the dashboard.
+- **`crons.hourly()`, `crons.daily()`, `crons.weekly()`, and `crons.monthly()` are NOT deprecated** — these are valid methods with explicitly named arguments. They provide an alternative syntax for common cron schedules.
+- **All cron expressions use UTC timezone** — set schedules in UTC regardless of your users' timezone.
+- **Mutations are retried automatically; actions are not** — scheduled mutations will retry on internal Convex errors, but actions execute at most once and fail permanently on transient errors.
+- **Cron jobs can call public functions, but internal functions are recommended** — internal functions are more secure and should be used for cron jobs.
+- **A single function can schedule up to 1000 functions with 8MB total argument size** — this includes both cron jobs and scheduled functions.
+- **Auth is not propagated to scheduled functions** — pass user information as parameters if needed.
 
 ## Instructions
 
@@ -26,10 +38,11 @@ Before implementing, do not assume; fetch the latest documentation:
 
 Convex cron jobs allow you to schedule functions to run at regular intervals or specific times. Key features:
 
-- Run functions on a fixed schedule
-- Support for interval-based and cron expression scheduling
-- Automatic retries on failure
-- Monitoring via the Convex dashboard
+- Run functions on a fixed schedule (interval-based or cron expression)
+- At most one run executes at a time; skipped runs are logged in the dashboard
+- Automatic retries on failure (for mutations)
+- Monitoring via the Convex dashboard logs view
+- Can schedule both public and internal functions
 
 ### Basic Cron Setup
 
@@ -40,7 +53,7 @@ import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
-// Run every hour
+// Run every hour using interval
 crons.interval(
   "cleanup expired sessions",
   { hours: 1 },
@@ -48,12 +61,20 @@ crons.interval(
   {}
 );
 
-// Run every day at midnight UTC
+// Run every day at midnight UTC using cron
 crons.cron(
   "daily report",
   "0 0 * * *",
   internal.reports.generateDailyReport,
   {}
+);
+
+// Run monthly using the monthly helper
+crons.monthly(
+  "payment reminder",
+  { day: 1, hourUTC: 16, minuteUTC: 0 },
+  internal.payments.sendPaymentEmail,
+  { email: "my_email@gmail.com" }
 );
 
 export default crons;
@@ -164,6 +185,52 @@ Common patterns:
 - `*/5 * * * *` - Every 5 minutes
 - `0 9-17 * * 1-5` - Every hour from 9 AM to 5 PM, Monday through Friday
 
+### Helper Methods for Common Schedules
+
+Convex provides helper methods for common schedules with explicitly named arguments:
+
+```typescript
+// convex/crons.ts
+import { cronJobs } from "convex/server";
+import { internal } from "./_generated/api";
+
+const crons = cronJobs();
+
+// Hourly: runs at the specified minute of every hour
+crons.hourly(
+  "hourly cleanup",
+  { minuteUTC: 0 }, // At minute 0 of every hour
+  internal.cleanup.hourly,
+  {}
+);
+
+// Daily: runs at the specified time every day
+crons.daily(
+  "daily report",
+  { hourUTC: 9, minuteUTC: 0 }, // At 9:00 AM UTC every day
+  internal.reports.daily,
+  {}
+);
+
+// Weekly: runs on the specified day of the week and time
+crons.weekly(
+  "weekly summary",
+  { dayOfWeek: 1, hourUTC: 8, minuteUTC: 0 }, // Mondays at 8:00 AM UTC
+  internal.reports.weekly,
+  {}
+);
+
+// Monthly: runs on the specified day of the month and time
+crons.monthly(
+  "monthly billing",
+  { day: 1, hourUTC: 0, minuteUTC: 0 }, // 1st of month at midnight UTC
+  internal.billing.monthly,
+  {}
+);
+
+export default crons;
+```
+
 ### Internal Functions for Crons
 
 Cron jobs should call internal functions for security:
@@ -179,7 +246,7 @@ export const cleanupExpiredSessions = internalMutation({
   returns: v.number(),
   handler: async (ctx) => {
     const oneHourAgo = Date.now() - 60 * 60 * 1000;
-    
+
     const expiredSessions = await ctx.db
       .query("sessions")
       .withIndex("by_lastActive")
@@ -209,7 +276,7 @@ export const processPendingTasks = internalMutation({
         status: "processing",
         startedAt: Date.now(),
       });
-      
+
       // Schedule the actual processing
       await ctx.scheduler.runAfter(0, internal.tasks.processTask, {
         taskId: task._id,
@@ -263,10 +330,10 @@ export const cleanupByType = internalMutation({
   returns: v.number(),
   handler: async (ctx, args) => {
     const cutoff = Date.now() - args.maxAge;
-    
+
     const oldFiles = await ctx.db
       .query("files")
-      .withIndex("by_type_and_created", (q) => 
+      .withIndex("by_type_and_created", (q) =>
         q.eq("type", args.fileType).lt("createdAt", cutoff)
       )
       .collect();
@@ -347,7 +414,7 @@ export const cleanupWithLogging = internalMutation({
 
 ### Batching for Large Datasets
 
-Handle large datasets in batches to avoid timeouts:
+Handle large datasets in batches to avoid timeouts and prevent cron jobs from running too long:
 
 ```typescript
 // convex/tasks.ts
@@ -389,7 +456,7 @@ export const processBatch = internalMutation({
 
 ### External API Calls in Crons
 
-Use actions for external API calls:
+Use actions for external API calls. Note that actions are NOT automatically retried:
 
 ```typescript
 // convex/sync.ts
@@ -411,6 +478,7 @@ export const syncExternalData = internalAction({
     });
 
     if (!response.ok) {
+      // Actions are not automatically retried - handle errors explicitly
       throw new Error(`API request failed: ${response.status}`);
     }
 
@@ -458,6 +526,64 @@ crons.interval(
 
 export default crons;
 ```
+
+### Canceling Scheduled Functions
+
+Cancel scheduled functions using the dashboard or `ctx.scheduler.cancel()`:
+
+```typescript
+// convex/messages.ts
+import { mutation } from "./_generated/server";
+import { v } from "convex/values";
+
+export const cancelScheduledFunction = mutation({
+  args: {
+    id: v.id("_scheduled_functions"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.scheduler.cancel(args.id);
+  },
+});
+```
+
+Cancel behavior:
+- If the function hasn't started running, it won't run
+- If it already started, it continues running but any functions it schedules won't run
+
+### Monitoring Scheduled Functions
+
+View scheduled functions in the `_scheduled_functions` system table:
+
+```typescript
+// convex/monitoring.ts
+import { query } from "./_generated/server";
+import { v } from "convex/values";
+
+export const listScheduledFunctions = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.system.query("_scheduled_functions").collect();
+  },
+});
+
+export const getScheduledFunction = query({
+  args: {
+    id: v.id("_scheduled_functions"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.system.get("_scheduled_functions", args.id);
+  },
+});
+```
+
+Scheduled function states:
+- `Pending`: Not started yet
+- `InProgress`: Running (actions only)
+- `Success`: Completed successfully
+- `Failed`: Hit an error
+- `Canceled`: Canceled via dashboard or scheduler
+
+Results are available for 7 days after completion.
 
 ## Examples
 
@@ -547,7 +673,7 @@ crons.interval(
   {}
 );
 
-// Report jobs
+// Report jobs using different methods
 crons.cron(
   "daily analytics",
   "0 1 * * *",
@@ -555,9 +681,9 @@ crons.cron(
   {}
 );
 
-crons.cron(
+crons.weekly(
   "weekly summary",
-  "0 9 * * 1",
+  { dayOfWeek: 1, hourUTC: 9, minuteUTC: 0 },
   internal.reports.weeklySummary,
   {}
 );
@@ -577,23 +703,46 @@ export default crons;
 
 - Never run `npx convex deploy` unless explicitly instructed
 - Never run any git commands unless explicitly instructed
-- Only use `crons.interval` or `crons.cron` methods, not deprecated helpers
-- Always call internal functions from cron jobs for security
+- All cron methods are valid: `interval`, `cron`, `hourly`, `daily`, `weekly`, `monthly`
+- Prefer internal functions for cron jobs to enforce security boundaries
 - Import `internal` from `_generated/api` even for functions in the same file
 - Add logging and monitoring for production cron jobs
 - Use batching for operations that process large datasets
-- Handle errors gracefully to prevent job failures
+- Handle errors gracefully in cron jobs
 - Use meaningful job names for dashboard visibility
-- Consider timezone when using cron expressions (Convex uses UTC)
+- All cron expressions use UTC timezone
+- Break long-running cron jobs into batches to prevent skipped runs
+- For actions, handle errors explicitly since they're not automatically retried
+- For mutations, rely on Convex's automatic retry mechanism for internal errors
 
 ## Common Pitfalls
 
-1. **Using public functions** - Cron jobs should call internal functions only
-2. **Long-running mutations** - Break large operations into batches
-3. **Missing error handling** - Unhandled errors will fail the entire job
+1. **Using public functions** - Cron jobs should call internal functions for better security
+2. **Long-running mutations** - Break large operations into batches to prevent skipped runs
+3. **Missing error handling** - Unhandled errors will fail the entire job; actions need explicit error handling
 4. **Forgetting timezone** - All cron expressions use UTC
-5. **Using deprecated helpers** - Avoid `crons.hourly`, `crons.daily`, etc.
+5. **Avoiding helper methods** - `crons.hourly()`, `crons.daily()`, etc. are valid and can improve readability
 6. **Not logging execution** - Makes debugging production issues difficult
+7. **Assuming auth propagation** - Auth is not propagated; pass user info as parameters
+8. **Expecting action retries** - Actions execute at most once; handle errors and retry manually if needed
+
+## High-Scale Scheduling
+
+For applications with complex scheduling needs, consider using Convex components:
+
+### Workpool
+Organize async operations into separate, customizable queues with priority, retries, and parallelism limits.
+- https://www.convex.dev/components/workpool
+
+### Workflow
+Simplify programming long-running code flows with configurable retries and delays.
+- https://www.convex.dev/components/workflow
+
+### Crons
+Use cronspec to run functions on a repeated schedule at runtime.
+- https://www.convex.dev/components/crons
+
+These components provide more advanced features for high-scale applications that need more control over execution, retries, and queue management.
 
 ## References
 
@@ -602,3 +751,5 @@ export default crons;
 - Cron Jobs: https://docs.convex.dev/scheduling/cron-jobs
 - Scheduling Overview: https://docs.convex.dev/scheduling
 - Scheduled Functions: https://docs.convex.dev/scheduling/scheduled-functions
+- Error Handling: https://docs.convex.dev/functions/error-handling
+- Crontab Guru (for cron expressions): https://crontab.guru/
