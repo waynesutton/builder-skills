@@ -53,6 +53,12 @@ export function getSkill(skillName) {
   return readFileSync(skillPath, "utf-8");
 }
 
+// A double quoted YAML value: drop the quotes and resolve \" and \\.
+function unquote(value) {
+  if (value.length < 2 || !value.startsWith('"') || !value.endsWith('"')) return value;
+  return value.slice(1, -1).replace(/\\(["\\])/g, "$1");
+}
+
 /**
  * Parse the name and description out of a SKILL.md frontmatter block.
  */
@@ -64,7 +70,7 @@ export function getSkillMeta(skillName) {
   for (const line of match[1].split("\n")) {
     const idx = line.indexOf(":");
     if (idx === -1) continue;
-    meta[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+    meta[line.slice(0, idx).trim()] = unquote(line.slice(idx + 1).trim());
   }
   return { name: meta.name ?? skillName, description: meta.description ?? "" };
 }

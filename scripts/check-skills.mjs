@@ -59,6 +59,12 @@ const warn = (msg) => {
   console.warn(`WARN   ${msg}`);
 };
 
+// A double quoted YAML value: drop the quotes and resolve \" and \\.
+function unquote(value) {
+  if (value.length < 2 || !value.startsWith('"') || !value.endsWith('"')) return value;
+  return value.slice(1, -1).replace(/\\(["\\])/g, "$1");
+}
+
 function parseFrontmatter(content, file) {
   const match = content.match(/^---\n([\s\S]*?)\n---\n/);
   if (!match) {
@@ -73,7 +79,7 @@ function parseFrontmatter(content, file) {
       fail(`${file}: bad frontmatter line "${line}"`);
       continue;
     }
-    meta[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+    meta[line.slice(0, idx).trim()] = unquote(line.slice(idx + 1).trim());
   }
   return meta;
 }
