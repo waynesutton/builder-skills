@@ -1,6 +1,6 @@
 ---
 name: convex
-description: Routes Convex work to the right builder skill and covers the handful of rules that apply everywhere: validators on every function, withIndex over filter, idempotent mutations, internal functions for scheduling. Use when a task mentions Convex and no more specific skill matches, or as the first stop before picking one.
+description: "Routes Convex work to the right builder skill and covers the handful of rules that apply everywhere: validators on every function, withIndex over filter, idempotent mutations, internal functions for scheduling. Use when a task mentions Convex and no more specific skill matches, or as the first stop before picking one."
 ---
 
 # Convex

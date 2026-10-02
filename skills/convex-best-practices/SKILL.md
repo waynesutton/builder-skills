@@ -1,6 +1,6 @@
 ---
 name: convex-best-practices
-description: Production patterns for Convex apps and the rules the @convex-dev/eslint-plugin enforces: validators, indexes, idempotent mutations, avoiding OCC conflicts, thin function wrappers, error handling. Use when reviewing Convex code, asking whether a pattern is right, setting up ESLint, or fixing write conflicts and slow queries.
+description: "Production patterns for Convex apps and the rules the @convex-dev/eslint-plugin enforces: validators, indexes, idempotent mutations, avoiding OCC conflicts, thin function wrappers, error handling. Use when reviewing Convex code, asking whether a pattern is right, setting up ESLint, or fixing write conflicts and slow queries."
 ---
 
 # Convex best practices

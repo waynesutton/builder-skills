@@ -1,6 +1,6 @@
 ---
 name: convex-http-actions
-description: Adds HTTP endpoints in convex/http.ts: webhook receivers with signature checks, REST style routes, CORS, auth headers, streaming responses, and file uploads over HTTP. Use when integrating Stripe, Clerk, Resend, or any service that calls back into the app, or when a client needs a plain HTTP API.
+description: "Adds HTTP endpoints in convex/http.ts: webhook receivers with signature checks, REST style routes, CORS, auth headers, streaming responses, and file uploads over HTTP. Use when integrating Stripe, Clerk, Resend, or any service that calls back into the app, or when a client needs a plain HTTP API."
 ---
 
 # Convex HTTP actions

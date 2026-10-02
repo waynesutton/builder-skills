@@ -1,6 +1,6 @@
 ---
 name: convex-realtime
-description: Builds reactive UIs on Convex subscriptions: useQuery patterns, optimistic updates, pagination that stays live, presence, and avoiding subscription churn. Use when wiring the frontend to Convex, when data does not update live, or when a page rerenders too much.
+description: "Builds reactive UIs on Convex subscriptions: useQuery patterns, optimistic updates, pagination that stays live, presence, and avoiding subscription churn. Use when wiring the frontend to Convex, when data does not update live, or when a page rerenders too much."
 ---
 
 # Convex realtime

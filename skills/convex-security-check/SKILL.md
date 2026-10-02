@@ -1,6 +1,6 @@
 ---
 name: convex-security-check
-description: Ten minute security pass over a Convex backend: public functions that should be internal, missing auth checks, unvalidated args, IDs from the client trusted without ownership checks, secrets in code. Use before merging a pull request, after adding new public functions, or when the user says 'quick security check'.
+description: "Ten minute security pass over a Convex backend: public functions that should be internal, missing auth checks, unvalidated args, IDs from the client trusted without ownership checks, secrets in code. Use before merging a pull request, after adding new public functions, or when the user says 'quick security check'."
 ---
 
 # Convex security check

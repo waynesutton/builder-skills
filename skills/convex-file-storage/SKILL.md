@@ -1,6 +1,6 @@
 ---
 name: convex-file-storage
-description: Handles files in Convex: upload URLs, storing blobs from actions, serving with getUrl or an HTTP action, metadata from the _storage table, and deletion. Use when users upload images or documents, when an action fetches a file from a third party, or when a file URL expires unexpectedly.
+description: "Handles files in Convex: upload URLs, storing blobs from actions, serving with getUrl or an HTTP action, metadata from the _storage table, and deletion. Use when users upload images or documents, when an action fetches a file from a third party, or when a file URL expires unexpectedly."
 ---
 
 # Convex file storage

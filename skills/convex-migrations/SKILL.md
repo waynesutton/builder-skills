@@ -1,6 +1,6 @@
 ---
 name: convex-migrations
-description: Changes a live Convex schema without downtime: make a field optional, backfill in batches, flip the validator, then clean up. Uses the @convex-dev/migrations component where it fits. Use when renaming or removing a field, changing a type, splitting a table, or when deploy fails with a schema validation error on existing documents.
+description: "Changes a live Convex schema without downtime: make a field optional, backfill in batches, flip the validator, then clean up. Uses the @convex-dev/migrations component where it fits. Use when renaming or removing a field, changing a type, splitting a table, or when deploy fails with a schema validation error on existing documents."
 ---
 
 # Convex migrations
