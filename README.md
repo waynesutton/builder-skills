@@ -4,7 +4,7 @@
 [![npm](https://img.shields.io/npm/v/@waynesutton/builder-skills)](https://www.npmjs.com/package/@waynesutton/builder-skills)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
-Workflow, security, and writing skills for builders shipping Convex apps. By [Wayne Sutton](https://waynesutton.ai).
+Workflow, building, and writing skills for builders shipping Convex apps. By [Wayne Sutton](https://waynesutton.ai).
 
 Ten skills that teach a coding agent how to run a project: triage before code, write a PRD, keep `task.md`, `changelog.md`, and `files.md` true from git, never run a git command that destroys work, check security before you ship, and write like you. They work with Threadbear,Claude Code, Codex, Cursor, OpenCode, and any agent that reads a `SKILL.md`.
 
