@@ -6,6 +6,7 @@ Three sections. Items move down as they land. An item moves to Completed only af
 
 Owner steps. Full commands in `MIGRATING.md`.
 
+- [ ] Commit and push 3.0.1, then `npm publish` from the repo root and approve it in Staged Packages on npmjs.com if npm stages it. The alias needs no republish.
 - [ ] `cd packages/builder-skills && npm publish` for the `builder-skills` alias, then approve its staged version on npmjs.com. If npm rejects the name, drop `npx builder-skills` from the docs.
 - [ ] Optional: publish `scripts/legacy-package/` as `@waynesutton/convex-skills` 1.1.0, then run the deprecate again.
 - [ ] Check https://www.skills.sh/waynesutton/builder-skills shows the Workflow, Coding, Security, Writing, and Moved groups once its cache refreshes.

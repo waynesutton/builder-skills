@@ -1,6 +1,6 @@
 {
   "name": "builder-skills",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Workflow, security, and writing skills for builders shipping Convex apps. PRDs, task.md, docs synced from git, git safety, sec-check, and a writing guide.",
   "author": {
     "name": "Wayne Sutton",

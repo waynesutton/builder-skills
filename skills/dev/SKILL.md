@@ -39,8 +39,8 @@ Resources:
 - Query functions: https://docs.convex.dev/functions/query-functions
 - Mutation functions: https://docs.convex.dev/functions/mutation-functions
 - Auth in functions: https://docs.convex.dev/auth/functions-auth
-- Convex auth https://docs.convex.dev/auth/convex-auth
-- Convex Auth v2 https://auth-v2.previews.convex.dev/
+- Convex Auth: https://docs.convex.dev/auth/convex-auth
+- Convex Auth v2: https://auth-v2.previews.convex.dev/
 - File storage: https://docs.convex.dev/file-storage/upload-files
 - Vector search: https://docs.convex.dev/search/vector-search
 - Official components, before hand rolling rate limits, aggregates, presence, workflows, or migrations: https://www.convex.dev/components/get-convex.md
@@ -51,7 +51,7 @@ For anything deeper, use the official Convex skills. https://www.convex.dev/agen
 
 ## Authentication
 
-- Use Convex Auth: https://docs.convex.dev/auth/convex-auth and Convex Auth v2 https://auth-v2.previews.convex.dev/ and what's the latest at https://docs.convex.dev/auth/convex-auth overwrides .
+- Use Convex Auth: https://docs.convex.dev/auth/convex-auth, and Convex Auth v2 at https://auth-v2.previews.convex.dev/. If they disagree, the latest at https://docs.convex.dev/auth/convex-auth wins.
 - Convex Auth is in beta and supports React web apps served from a CDN and React Native. Next.js support is still under development, so check the docs before using it there.
 - Read the caller with `ctx.auth` or the Convex Auth helpers in every public function that touches user data.
 

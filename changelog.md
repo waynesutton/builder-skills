@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-11-09
+
+### Changed
+
+- `dev` skill links Convex Auth v2 (https://auth-v2.previews.convex.dev/) next to the Convex Auth docs, with the docs as the tiebreaker.
+- Scoped packages publish with `publishConfig.access: public`, so `npm publish` no longer fails with E402.
+- `MIGRATING.md` covers npm staged publishing: approve the real version in the Staged Packages tab on npmjs.com.
+
 ## [3.0.0] - 2026-11-09
 
 The Convex API skills moved to the official Convex set (convex/agent-skills, convex/convex-agent-plugins, and https://www.convex.dev/agent-setup.md). builder-skills now ships ten skills for the work around Convex: planning, tracking, docs, git, security, and writing. First release on npm under this name.

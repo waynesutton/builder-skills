@@ -15,7 +15,7 @@ One line per file that matters. What it is for, not how it works.
 - `files.md` this file
 - `task.md` To Do / In Progress / Completed with UTC timestamps
 - `LICENSE` Apache-2.0
-- `package.json` `@waynesutton/builder-skills` 3.0.0, binary `builder-skills`, `check` and `prepublishOnly` scripts
+- `package.json` `@waynesutton/builder-skills` 3.0.1, binary `builder-skills`, `check` and `prepublishOnly` scripts
 - `index.js` programmatic API: `listSkills`, `listRetired`, `getSkill`, `getSkillPath`, `getSkillDir`, `getSkillMeta`, `SKILLS`, `GROUPS`, `MANIFEST`
 - `skills.sh.json` groups on the skills.sh repo page: Workflow, Coding, Security, Writing, and the retired stubs
 - `.gitignore` ignores node_modules, env files, `.claude/`, `.cursor/`, `.opencode/`, `.agents/`
@@ -36,7 +36,7 @@ One line per file that matters. What it is for, not how it works.
 
 ## .claude-plugin/
 
-- `plugin.json` Claude Code plugin manifest, `builder-skills` 3.0.0, lists active skills and retired stubs
+- `plugin.json` Claude Code plugin manifest, `builder-skills` 3.0.1, lists active skills and retired stubs
 - `marketplace.json` marketplace manifest so `claude plugin marketplace add waynesutton/builder-skills` works
 
 ## .codex/
