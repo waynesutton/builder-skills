@@ -1,6 +1,6 @@
 ---
 name: convex-security-audit
-description: Deep security review of a Convex app: authorization model, data access paths per table, HTTP action exposure, rate limiting, file storage access, scheduled function trust, and a written findings report. Use before launch, after an incident, or when the user asks for a full audit rather than a quick check.
+description: "Deep security review of a Convex app: authorization model, data access paths per table, HTTP action exposure, rate limiting, file storage access, scheduled function trust, and a written findings report. Use before launch, after an incident, or when the user asks for a full audit rather than a quick check."
 ---
 
 # Convex security audit

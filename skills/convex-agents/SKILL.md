@@ -1,6 +1,6 @@
 ---
 name: convex-agents
-description: Builds AI agents on the Convex agent component: threads, messages, tools that call queries and mutations, streaming, RAG with vector search, and workflows for multi step jobs. Use when adding a chat assistant, tool calling agent, or retrieval feature to a Convex app.
+description: "Builds AI agents on the Convex agent component: threads, messages, tools that call queries and mutations, streaming, RAG with vector search, and workflows for multi step jobs. Use when adding a chat assistant, tool calling agent, or retrieval feature to a Convex app."
 ---
 
 # Convex agents

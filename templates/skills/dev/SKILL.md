@@ -1,6 +1,6 @@
 ---
 name: dev
-description: House style for full stack Convex work in this project: type safe code, terse answers, Convex mutation rules, design system over browser defaults, and the files.md / changelog.md / task.md habit. Edit this file to match the project. Use when writing or reviewing application code in this repo.
+description: "House style for full stack Convex work in this project: type safe code, terse answers, Convex mutation rules, design system over browser defaults, and the files.md / changelog.md / task.md habit. Edit this file to match the project. Use when writing or reviewing application code in this repo."
 ---
 
 # Dev

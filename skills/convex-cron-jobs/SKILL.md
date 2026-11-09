@@ -1,6 +1,6 @@
 ---
 name: convex-cron-jobs
-description: Schedules work in Convex: cron jobs in convex/crons.ts, one off scheduled functions with runAfter and runAt, batching large jobs, and cancelling or inspecting the queue. Use when something needs to run on a timer, later, or in the background, or when a cron is not firing.
+description: "Schedules work in Convex: cron jobs in convex/crons.ts, one off scheduled functions with runAfter and runAt, batching large jobs, and cancelling or inspecting the queue. Use when something needs to run on a timer, later, or in the background, or when a cron is not firing."
 ---
 
 # Convex cron jobs and scheduling
