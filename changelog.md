@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-11-09
+
+The Convex API skills moved to the official Convex set (convex/agent-skills, convex/convex-agent-plugins, and https://www.convex.dev/agent-setup.md). builder-skills now ships ten skills for the work around Convex: planning, tracking, docs, git, security, and writing. First release on npm under this name.
+
+### Added
+
+- `sec-check` skill: a secret scanner (`scripts/sec-scan.sh`), a per function ledger (`scripts/surface.cjs`), and a run log (`scripts/changelog.cjs`), then a gate that needs a real attacker path before anything gets a severity. 20 rules, full audit mode, fix patterns, and deployment probes in `references/`.
+- `write` skill: write, proof, and scan modes, voice matching, evidence rules, format recipes, and an editing watchlist.
+- `workflow`, `create-prd`, and `update-project-docs` skills. They replace `project-workflow` and `project-docs`, keeping their git evidence rules, Convex detection, redaction, and lessons loop. `update-project-docs` answers `/update` and prints the commit message as plain text.
+- `think-first` skill (from the `help` template): root cause first, 98 percent confidence bar, minimal scope, Convex Auth docs.
+- `dev` skill (from the `dev` template): house style for React, Convex, Convex Auth, and Resend.
+- `what-i-need-from-you` skill: ends each turn with numbered asks and logs them by id in `prds/what-i-need-from-you.md`.
+- CLI picker: `npx builder-skills` with no arguments in a terminal asks which skills, which agents (it finds `.claude`, `.codex`, `.cursor`, `.opencode`, `.agents`), and whether to add starters.
+- CLI commands `add`, `list --json`, `update`, `start`, `init`, and `--target` with a comma separated list, `--yes`, and `--force`. Retired names print their replacement.
+- `builder-skills` unscoped npm alias in `packages/builder-skills/`, so `npx builder-skills` works.
+- `skills/manifest.json` as the single list of skills, groups, and retired names. The CLI, `index.js`, and the lint read it.
+- `skills.sh.json` groups the skills.sh repo page.
+- Templates: `SECURITY.md` (read first by `sec-check`) and `prds/what-i-need-from-you.md`. `AGENTS.md` now points to the Convex agent setup and the new skills.
+- `MIGRATING.md` with the old to new map and the npm publish and deprecate steps.
+- `scripts/legacy-package/`: a final `@waynesutton/convex-skills` 1.1.0 that prints where everything moved.
+- `index.js`: `listRetired()`, `GROUPS`, `MANIFEST`. `getSkillMeta()` reads single quoted values too.
+
+### Changed
+
+- `--target opencode` writes to `.opencode/skills`, OpenCode's own folder.
+- `install`, `install-all`, and `install-templates` still work as aliases for `add`, `add --all`, and `init`.
+- `npm run check` fails on unquoted frontmatter values with `: `, ` #`, or a leading YAML indicator, on em dashes, and when `plugin.json`, `.codex/skills/`, the README tables, `skills.sh.json`, versions, or the alias dependency disagree with the manifest.
+- README, AGENTS.md, GEMINI.md, CONTRIBUTING.md, docs.md, and .codex/README.md rewritten for 3.0.
+
+### Removed
+
+- The 13 Convex API skills. `convex` is deleted because it shares a name with the official skill. The other 12 ship one more release as short stubs that name their replacement, so `npx skills update` delivers the redirect. The stubs go in 4.0.
+- `project-workflow`, `project-docs`, and `templates/skills/` (`dev` and `help` are real skills now).
+- `command/convex.md`, the OpenCode `/convex` router. OpenCode finds skills on its own.
+
+### Fixed
+
+- Skill descriptions are quoted so strict YAML parsers accept them. `npx skills add waynesutton/builder-skills` found only 7 of 17 skills before (#11, fixed by #12 from cgalo, merged 2026-11-08).
+
 ## [2.0.0] - 2026-09-16
 
 Renamed from `@waynesutton/convex-skills` to `@waynesutton/builder-skills`. Convex now ships official skills at get-convex/convex-agent-plugins, so this set is named for who it serves. Every skill was rewritten against the current Anthropic and OpenAI skill authoring guidance.

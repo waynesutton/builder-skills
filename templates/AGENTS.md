@@ -2,11 +2,15 @@
 
 [Project name]. [One sentence on what it does and who uses it.]
 
-Stack: Convex (backend), [React / Next.js / Vite / Expo] (frontend), [auth provider], [email provider].
+Stack: Convex (backend), [React / Next.js / Vite / Expo] (frontend), Convex Auth (https://docs.convex.dev/auth/convex-auth), [email provider].
+
+## Convex setup
+
+If `convex/_generated/ai/guidelines.md` is missing, read https://www.convex.dev/agent-setup.md and follow it. It installs the Convex AI files and the official Convex plugin or skills.
 
 ## Docs first
 
-For any Convex API, fetch https://docs.convex.dev/llms.txt and follow the link for the area before relying on memory. The skills in `.claude/skills/` (or `.agents/skills/`) cover each area in depth. Load the one that matches the task.
+Read `convex/_generated/ai/guidelines.md` before writing Convex code. For any Convex API, fetch https://docs.convex.dev/llms.txt and follow the link for the area before relying on memory. Use the official Convex skills for Convex APIs (functions, schema, auth, crons, migrations, components). Run `npx builder-skills start` to see which builder skill fits a task.
 
 ## Commands
 
@@ -52,8 +56,11 @@ task.md           To Do / In Progress / Completed
 
 ## Workflow
 
-- Non trivial work starts with a PRD in `prds/`. Load the `project-workflow` skill.
-- After a change lands, sync `task.md`, `changelog.md`, `files.md`. Load the `project-docs` skill.
+- Multi step work follows the `workflow` skill. Non trivial work starts with a PRD in `prds/`; load `create-prd`.
+- After a change lands, sync `task.md`, `changelog.md`, `files.md`. Load `update-project-docs` (or say `/update`).
+- Before a deploy, a public repo, or merging AI generated code, run `sec-check`. It reads `SECURITY.md` first.
+- When blocked on the user, end the reply with the `what-i-need-from-you` section and log it in `prds/what-i-need-from-you.md`.
+- For posts, docs, READMEs, and commit messages, load `write`.
 - Before any git command that could discard work, load the `git-safety` skill.
 - The request sets the scope. Extra ideas go in the summary, not the diff. Load `avoid-feature-creep` if unsure.
 

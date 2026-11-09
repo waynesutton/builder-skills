@@ -1,68 +1,73 @@
 # builder-skills
 
-Agent skills for builders shipping Convex apps. This file is context for agents working inside this repo. It also symlinks to `CLAUDE.md`.
+Workflow, security, and writing skills for builders shipping Convex apps. This file is context for agents working inside this repo. `CLAUDE.md` symlinks to it.
 
 ## What this repo is
 
-Seventeen skills in `skills/<name>/`. Fourteen cover Convex. Three cover how to run a project: PRD first, docs synced from git evidence, git commands that cannot destroy work. Each skill is a folder with `SKILL.md`, an `agents/openai.yaml` for Codex icons, and sometimes a `references/` folder that the skill loads on demand.
+Ten active skills in `skills/<name>/`: six for running a project, two for how the agent codes, one security check, one writing guide. Twelve more folders are retired stubs that point to the official Convex skills. They ship for one release so `npx skills update` delivers the redirect, then go away in 4.0.
 
-The CLI in `bin/cli.js` installs skills into `.claude/skills`, `.codex/skills`, or `.agents/skills`. Templates in `templates/` are starters a user edits. `scripts/check-skills.mjs` is the lint.
+`skills/manifest.json` is the one list of skills, groups, and retired names. The CLI (`bin/cli.js`), `index.js`, and the lint (`scripts/check-skills.mjs`) all read it.
+
+Convex API knowledge now lives in the official Convex skills (https://github.com/convex/agent-skills) and plugins (https://github.com/convex/convex-agent-plugins). Do not add Convex API skills here. Point to those instead.
 
 ## Docs first
 
-For Convex APIs, fetch https://docs.convex.dev/llms.txt and follow the link for the area. Do not rely on memory for method names, validator names, or component APIs. When a skill cites an API, it was checked against that index; keep it that way.
+For any Convex API a skill mentions, fetch https://docs.convex.dev/llms.txt and follow the link for the area. Do not rely on memory for method names, validator names, or component APIs.
 
 ## Working on skills
 
-- Frontmatter is `name` and `description` only. `name` matches the folder.
-- `description` is third person, says what the skill does, and includes a `Use when ...` sentence.
-- `SKILL.md` under 300 lines. Hard limit 500. Deep material goes in `references/*.md` and gets linked from the body.
-- Code samples use the object form with `args` and `returns` validators, `withIndex` over `filter`, `internal.*` for scheduling.
+- Frontmatter is `name` and a quoted `description` only. `name` matches the folder. Unquoted values with `: ` break strict YAML parsers (issue #11), and the lint fails on them.
+- `description` is third person, says what the skill does, and ends with a `Use when ...` sentence. Under 1024 characters.
+- `SKILL.md` under 300 lines. Hard limit 500. Deep material goes in `references/*.md`, linked from `SKILL.md`. References do not link to each other.
+- Scripts go in `scripts/` and are run with `bash` or `node`, so file modes do not matter.
 - No emojis. No em dashes. No marketing words.
-- Adding a skill means updating `bin/cli.js`, `index.js`, `.claude-plugin/plugin.json`, the README table, `docs.md`, and adding a symlink in `.codex/skills/`.
-- Run `npm run check` before calling anything done. It has to pass.
+- Adding a skill:
+  1. add a folder with `SKILL.md`, `agents/openai.yaml`, and `assets/`
+  2. add an entry to `skills/manifest.json`
+  3. add it to `.claude-plugin/plugin.json`, `skills.sh.json`, the README table, and `docs.md`
+  4. run `ln -s ../../skills/<name> .codex/skills/<name>`
+  5. run `npm run check`, which fails if any list disagrees with the manifest
+- Retiring a skill: replace `SKILL.md` with a stub under 25 lines, delete its `references/`, and move its manifest entry to `retired` with `stub: true` and a replacement.
 
 ## Working on this repo
 
-- Non trivial work gets a PRD in `prds/`. See `skills/project-workflow`.
-- After a change, sync `task.md`, `changelog.md`, `files.md`. See `skills/project-docs`. Dates come from `git log --date=short`.
+- Non trivial work gets a PRD in `prds/`. See `skills/create-prd`.
+- After a change, sync `task.md`, `changelog.md`, and `files.md`. See `skills/update-project-docs`. Dates come from `git log --date=short`.
 - Before any git command that could discard work, see `skills/git-safety`.
+- Run `npm run check` before calling anything done. It has to pass.
 - Do not commit, push, publish, tag, or deploy. Print a suggested commit message and stop.
 
 ## Layout
 
 ```
-skills/<name>/SKILL.md          the skill
-skills/<name>/references/*.md   loaded on demand from SKILL.md
-skills/<name>/agents/openai.yaml Codex icon metadata
-bin/cli.js                      builder-skills CLI
-index.js                        programmatic API
-scripts/check-skills.mjs        lint, run with npm run check
-templates/                      starters installed by install-templates
-.claude-plugin/                 plugin.json and marketplace.json for Claude Code
-.codex/skills/                  symlinks into skills/ for Codex discovery
-command/convex.md               OpenCode slash command
-prds/                           PRDs for this repo, lessons.md, archive/
+skills/manifest.json              groups, active skills, retired skills
+skills/<name>/SKILL.md            the skill
+skills/<name>/references/*.md     loaded on demand from SKILL.md
+skills/<name>/scripts/            sec-check only: scanner, ledger, run log
+skills/<name>/agents/openai.yaml  Codex icon metadata
+bin/cli.js                        the CLI: picker, add, list, update, start, init
+index.js                          programmatic API
+packages/builder-skills/          unscoped npx alias, forwards to the main package
+scripts/check-skills.mjs          lint, run with npm run check
+scripts/legacy-package/       final release of the old npm name, prints the move
+templates/                        starters copied by init
+skills.sh.json                    how skills.sh groups this repo's skills
+.claude-plugin/                   plugin.json and marketplace.json for Claude Code
+.codex/skills/                    symlinks into skills/ for Codex discovery
+prds/                             PRDs for this repo, lessons.md, archive/
 ```
 
 ## Skills
 
 | Skill | Load when |
 | --- | --- |
-| `convex` | Convex task with no closer match |
-| `convex-best-practices` | reviewing patterns, OCC conflicts, ESLint setup |
-| `convex-functions` | writing any function in `convex/` |
-| `convex-schema-validator` | tables, validators, indexes |
-| `convex-realtime` | frontend subscriptions, optimistic updates |
-| `convex-http-actions` | webhooks, REST, CORS |
-| `convex-file-storage` | uploads, serving, metadata |
-| `convex-cron-jobs` | crons, scheduled functions |
-| `convex-migrations` | live schema changes, backfills |
-| `convex-agents` | AI agents, tools, RAG |
-| `convex-component-authoring` | building a component |
-| `convex-security-check` | quick pass before merge |
-| `convex-security-audit` | full review before launch |
-| `avoid-feature-creep` | scope is drifting |
-| `project-workflow` | multi step work, PRDs, task.md |
-| `project-docs` | syncing changelog, files.md, task.md |
+| `workflow` | multi step work: triage, PRD, task.md, docs sync |
+| `create-prd` | before a multi file feature, schema change, or hard bug |
+| `update-project-docs` | a change landed, or the user says `/update` |
 | `git-safety` | any git command that could discard work |
+| `avoid-feature-creep` | scope is drifting |
+| `what-i-need-from-you` | ending a turn, or blocked on the user |
+| `think-first` | a bug, a failed fix, a vague request |
+| `dev` | writing app code in the house style |
+| `sec-check` | before deploy, a public repo, or after AI generated code |
+| `write` | READMEs, docs, posts, emails, commit messages |

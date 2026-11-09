@@ -1,7 +1,7 @@
 {
   "name": "builder-skills",
-  "version": "2.0.0",
-  "description": "Agent skills for builders shipping Convex apps. Convex patterns plus the PRD, task, changelog, and files.md workflow.",
+  "version": "3.0.0",
+  "description": "Workflow, security, and writing skills for builders shipping Convex apps. PRDs, task.md, docs synced from git, git safety, sec-check, and a writing guide.",
   "author": {
     "name": "Wayne Sutton",
     "url": "https://waynesutton.ai"
@@ -9,9 +9,25 @@
   "homepage": "https://github.com/waynesutton/builder-skills",
   "repository": "https://github.com/waynesutton/builder-skills",
   "license": "Apache-2.0",
-  "keywords": ["convex", "skills", "prd", "changelog", "workflow"],
+  "keywords": [
+    "convex",
+    "skills",
+    "prd",
+    "workflow",
+    "security",
+    "writing"
+  ],
   "skills": [
-    "./skills/convex",
+    "./skills/workflow",
+    "./skills/create-prd",
+    "./skills/update-project-docs",
+    "./skills/git-safety",
+    "./skills/avoid-feature-creep",
+    "./skills/what-i-need-from-you",
+    "./skills/think-first",
+    "./skills/dev",
+    "./skills/sec-check",
+    "./skills/write",
     "./skills/convex-best-practices",
     "./skills/convex-functions",
     "./skills/convex-schema-validator",
@@ -23,10 +39,6 @@
     "./skills/convex-agents",
     "./skills/convex-component-authoring",
     "./skills/convex-security-check",
-    "./skills/convex-security-audit",
-    "./skills/avoid-feature-creep",
-    "./skills/project-workflow",
-    "./skills/project-docs",
-    "./skills/git-safety"
+    "./skills/convex-security-audit"
   ]
 }

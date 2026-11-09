@@ -1,0 +1,58 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Workflow",
+      "description": "Plan, track, and ship without losing work.",
+      "skills": [
+        "workflow",
+        "create-prd",
+        "update-project-docs",
+        "git-safety",
+        "avoid-feature-creep",
+        "what-i-need-from-you"
+      ]
+    },
+    {
+      "title": "Coding",
+      "description": "How the agent thinks and writes code.",
+      "skills": [
+        "think-first",
+        "dev"
+      ]
+    },
+    {
+      "title": "Security",
+      "description": "Find real attacker paths before you ship.",
+      "skills": [
+        "sec-check"
+      ]
+    },
+    {
+      "title": "Writing",
+      "description": "Prose that sounds like you.",
+      "skills": [
+        "write"
+      ]
+    },
+    {
+      "title": "Moved to official Convex skills",
+      "description": "Retired in 3.0. Each one points to its replacement. Install the official set with npx skills add convex/agent-skills.",
+      "skills": [
+        "convex-best-practices",
+        "convex-functions",
+        "convex-schema-validator",
+        "convex-realtime",
+        "convex-http-actions",
+        "convex-file-storage",
+        "convex-cron-jobs",
+        "convex-migrations",
+        "convex-agents",
+        "convex-component-authoring",
+        "convex-security-check",
+        "convex-security-audit"
+      ]
+    }
+  ]
+}

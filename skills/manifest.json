@@ -1,0 +1,38 @@
+{
+  "groups": [
+    { "id": "workflow", "title": "Workflow", "description": "Plan, track, and ship without losing work." },
+    { "id": "coding", "title": "Coding", "description": "How the agent thinks and writes code." },
+    { "id": "security", "title": "Security", "description": "Find real attacker paths before you ship." },
+    { "id": "writing", "title": "Writing", "description": "Prose that sounds like you." }
+  ],
+  "skills": [
+    { "name": "workflow", "group": "workflow", "summary": "Triage, PRD, task.md, docs sync, lessons loop" },
+    { "name": "create-prd", "group": "workflow", "summary": "Write a PRD in prds/ before non trivial work" },
+    { "name": "update-project-docs", "group": "workflow", "summary": "Sync task.md, changelog.md, files.md from git, print the commit message" },
+    { "name": "git-safety", "group": "workflow", "summary": "Block git commands that destroy work" },
+    { "name": "avoid-feature-creep", "group": "workflow", "summary": "Ship what was asked, park the rest" },
+    { "name": "what-i-need-from-you", "group": "workflow", "summary": "End each turn with the exact asks, logged by id" },
+    { "name": "think-first", "group": "coding", "summary": "Root cause first, 98 percent confidence bar, minimal scope" },
+    { "name": "dev", "group": "coding", "summary": "House style for React, Convex, Convex Auth. Edit it.", "editable": true },
+    { "name": "sec-check", "group": "security", "summary": "Secret scan, function ledger, attacker path gate, fixes" },
+    { "name": "write", "group": "writing", "summary": "Draft, proof, and audit prose in your voice" }
+  ],
+  "retired": [
+    { "name": "convex", "stub": false, "replacement": ["convex"] },
+    { "name": "convex-best-practices", "stub": true, "replacement": ["convex-reviewer", "convex-optimize"] },
+    { "name": "convex-functions", "stub": true, "replacement": ["convex-design"] },
+    { "name": "convex-schema-validator", "stub": true, "replacement": ["convex-design"] },
+    { "name": "convex-realtime", "stub": true, "replacement": ["convex-design"] },
+    { "name": "convex-http-actions", "stub": true, "replacement": ["convex-design"] },
+    { "name": "convex-file-storage", "stub": true, "replacement": ["convex-design"] },
+    { "name": "convex-cron-jobs", "stub": true, "replacement": ["convex-crons"] },
+    { "name": "convex-migrations", "stub": true, "replacement": ["convex-migrate", "convex-migrate-rehearse"] },
+    { "name": "convex-agents", "stub": true, "replacement": ["convex-agent"] },
+    { "name": "convex-component-authoring", "stub": true, "replacement": ["convex-create-component"] },
+    { "name": "convex-security-check", "stub": true, "replacement": ["sec-check", "convex-authz"] },
+    { "name": "convex-security-audit", "stub": true, "replacement": ["sec-check", "convex-authz"] },
+    { "name": "project-workflow", "stub": false, "replacement": ["workflow", "create-prd"] },
+    { "name": "project-docs", "stub": false, "replacement": ["update-project-docs"] },
+    { "name": "help", "stub": false, "replacement": ["think-first"] }
+  ]
+}

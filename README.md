@@ -4,190 +4,240 @@
 [![npm](https://img.shields.io/npm/v/@waynesutton/builder-skills)](https://www.npmjs.com/package/@waynesutton/builder-skills)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
-Agent skills for builders shipping Convex apps. By [Wayne Sutton](https://waynesutton.ai).
+Workflow, security, and writing skills for builders shipping Convex apps. By [Wayne Sutton](https://waynesutton.ai).
 
-Seventeen skills. Fourteen teach an agent how to build on [Convex](https://convex.dev) the way the docs say to: validators on every function, indexes over filters, idempotent mutations, HTTP actions that verify signatures, migrations that do not take the app down. Three teach it how to run a project: write a PRD before touching code, keep `task.md`, `changelog.md`, and `files.md` true from git evidence, and never run a git command that can destroy work.
+Ten skills that teach a coding agent how to run a project: triage before code, write a PRD, keep `task.md`, `changelog.md`, and `files.md` true from git, never run a git command that destroys work, check security before you ship, and write like you. They work with Claude Code, Codex, Cursor, OpenCode, and any agent that reads a `SKILL.md`.
 
-They work with Claude Code, Codex, Cursor, OpenCode, and anything else that reads a `SKILL.md`.
+```bash
+npx builder-skills
+```
 
-Looking for the official Convex skills? Those are at [get-convex/convex-agent-plugins](https://github.com/get-convex/convex-agent-plugins). This repo is my opinionated set, tuned for how I build.
+## Set up Convex first
+
+Convex knowledge (functions, schema, auth, crons, migrations, components) now comes from the official Convex skills and plugins. Use those for Convex APIs. Use builder-skills for everything around them.
+
+The fastest way in is to tell your agent:
+
+```
+Read https://www.convex.dev/agent-setup.md and follow it.
+```
+
+That installs the Convex AI files (`convex/_generated/ai/guidelines.md` and `.agents/skills`) and the Convex plugin for each coding agent on your machine. To do it by hand:
+
+```bash
+npx convex ai-files install                         # in a Convex project
+npx skills add convex/agent-skills                  # official Convex skills, any agent
+
+claude plugin marketplace add anthropics/claude-plugins-official
+claude plugin install convex@claude-plugins-official --scope user
+
+codex plugin marketplace add convex/convex-codex-plugin
+codex plugin add convex@convex-codex-plugin
+```
+
+For Cursor, see [convex/convex-agent-plugins](https://github.com/convex/convex-agent-plugins). The full list of official skills is at [docs.convex.dev/ai/agent-skills](https://docs.convex.dev/ai/agent-skills).
 
 ## Install
 
-Three ways in. Pick one.
+Run it with no arguments and pick what you want:
 
-<details open>
-<summary><strong>skills.sh (any agent, editable files)</strong></summary>
+```
+$ npx builder-skills
+
+builder-skills 3.0.0
+Workflow
+   1  workflow               Triage, PRD, task.md, docs sync, lessons loop
+   2  create-prd             Write a PRD in prds/ before non trivial work
+   ...
+Skills to add [Enter = all, or 1,3,9 or 1-6]:
+
+Agents
+   1  Claude Code            .claude/skills  (found)
+   2  Codex                  .codex/skills
+   ...
+Install for [Enter = Claude Code]:
+
+Add project starters (AGENTS.md, task.md, changelog.md, files.md, SECURITY.md, prds/)? [y/N]:
+```
+
+It finds the agent folders already in your project and selects them by default. Nothing is installed until you answer the last prompt.
+
+Or skip the prompts:
+
+```bash
+npx builder-skills add --all
+npx builder-skills add workflow create-prd update-project-docs sec-check
+npx builder-skills add --all --target claude,codex
+npx builder-skills init                 # project starters only
+npx builder-skills list                 # what is available (--json for agents)
+npx builder-skills update               # refresh what you installed
+npx builder-skills start                # a short router an agent can follow
+```
+
+`--target` takes `claude` (`.claude/skills`), `codex` (`.codex/skills`), `cursor` (`.cursor/skills`), `opencode` (`.opencode/skills`), `agents` (`.agents/skills`), a path, or a comma separated list. `--link` symlinks instead of copying. `npx @waynesutton/builder-skills` works the same as `npx builder-skills`.
+
+<details>
+<summary><strong>skills.sh</strong></summary>
 
 ```bash
 npx skills add waynesutton/builder-skills
+npx skills add waynesutton/builder-skills --skill sec-check --skill write
 ```
 
-The installer asks which skills you want and which agents to install them for. It writes ordinary files into your repo that you can edit. Pull my updates later with `npx skills update`.
+The installer asks which skills and which agents. It writes ordinary files you can edit. Pull updates with `npx skills update`.
 
 </details>
 
 <details>
-<summary><strong>Claude Code plugin (managed, auto updates)</strong></summary>
+<summary><strong>Claude Code plugin</strong></summary>
 
 ```bash
-claude plugins marketplace add waynesutton/builder-skills
-claude plugins install builder-skills@waynesutton
-```
-
-Or inside a session:
-
-```
-/plugin marketplace add waynesutton/builder-skills
-/plugin install builder-skills@waynesutton
+claude plugin marketplace add waynesutton/builder-skills
+claude plugin install builder-skills@waynesutton
 ```
 
 </details>
-
-<details>
-<summary><strong>npm CLI (pick your target folder)</strong></summary>
-
-```bash
-npx @waynesutton/builder-skills install-all
-npx @waynesutton/builder-skills install-all --target codex
-npx @waynesutton/builder-skills install-all --target cursor
-npx @waynesutton/builder-skills install convex-functions project-workflow
-npx @waynesutton/builder-skills install-templates
-```
-
-`--target` takes `claude` (default, `.claude/skills`), `codex` (`.codex/skills`), `cursor` (`.cursor/skills`), `agents` or `opencode` (`.agents/skills`), or any path. Add `--link` to symlink instead of copy.
-
-</details>
-
-## Then run `install-templates`
-
-```bash
-npx @waynesutton/builder-skills install-templates
-```
-
-This drops five starter files at your project root and two editable skills in `.claude/skills/`:
-
-| File | What it is |
-| --- | --- |
-| `AGENTS.md` (+ `CLAUDE.md` symlink) | Stack, commands, rules, and a pointer to the skills |
-| `files.md` | One line per file. What it is for. |
-| `changelog.md` | Keep a Changelog. Dates from `git log`, never invented. |
-| `task.md` | To Do / In Progress / Completed with UTC timestamps |
-| `prds/lessons.md` | One line per lesson learned. Read at session start. |
-| `.claude/skills/dev/` | House style. Edit it. |
-| `.claude/skills/help/` | Root cause first, confidence bar, what not to touch. Edit it. |
-
-Nothing existing gets overwritten.
-
-## Why these exist
-
-I build with Convex every day and I got tired of the same three failures.
-
-**The agent forgets the Convex rules.** It writes `filter` instead of `withIndex`. It skips the `returns` validator. It schedules `api.*` instead of `internal.*`. It puts `Date.now()` in a query and wonders why the cache never hits. The `convex-*` skills fix that. Each one is short, points at https://docs.convex.dev/llms.txt for the current API, and pushes deep material into `references/` so the agent only loads what the task needs.
-
-**The agent starts coding before it knows what it is building.** `project-workflow` makes it triage first, write a two screen PRD in `prds/`, track the work in `task.md`, and record a lesson when the same correction happens twice.
-
-**The docs drift from the code.** `project-docs` reads `git log` and the working tree, then updates `changelog.md`, `files.md`, and `task.md` from what shipped. It refuses to log a Convex component that is not registered in `convex.config.ts`, and it scans for secrets before saving. The evidence rules borrow from [get-convex/convex-hackathon-skill](https://github.com/get-convex/convex-hackathon-skill).
-
-And one more that cost me two days once: `git-safety`. No `reset --hard`, `checkout -- .`, `clean -fd`, or `stash drop` without the user saying yes to that exact command. "Undo" means edit the file, not check it out.
-
-## How I build with these
-
-The loop is short. Ask for the change. The agent writes a PRD in `prds/`, builds against it, and moves the task through `task.md`. When it lands, `/project-docs` reads the git evidence and updates the three docs. Then I commit with the message it prints.
-
-A project run this way ends up with four things next to the code:
-
-```
-prds/          one PRD per non trivial change, plus lessons.md
-task.md        what is queued, in flight, and done, with UTC timestamps
-changelog.md   what shipped, dated from git log
-files.md       what every file is for
-```
-
-[waynesutton-ai](https://github.com/waynesutton/waynesutton-ai) is the live example. This repo runs the same loop on itself.
 
 ## Skills
-
-### Convex
-
-| Skill | Use when |
-| --- | --- |
-| [convex](skills/convex/SKILL.md) | Convex task with no closer match. Routes to the rest. |
-| [convex-best-practices](skills/convex-best-practices/SKILL.md) | Reviewing patterns, OCC conflicts, ESLint plugin setup |
-| [convex-functions](skills/convex-functions/SKILL.md) | Writing queries, mutations, actions, internal functions |
-| [convex-schema-validator](skills/convex-schema-validator/SKILL.md) | Tables, validators, indexes, relationships |
-| [convex-realtime](skills/convex-realtime/SKILL.md) | Frontend subscriptions, optimistic updates, presence |
-| [convex-http-actions](skills/convex-http-actions/SKILL.md) | Webhooks, REST routes, CORS, auth headers |
-| [convex-file-storage](skills/convex-file-storage/SKILL.md) | Uploads, serving, metadata, deletion |
-| [convex-cron-jobs](skills/convex-cron-jobs/SKILL.md) | Cron jobs, scheduled functions, batching |
-| [convex-migrations](skills/convex-migrations/SKILL.md) | Live schema changes and backfills |
-| [convex-agents](skills/convex-agents/SKILL.md) | AI agents, tools, streaming, RAG, workflows |
-| [convex-component-authoring](skills/convex-component-authoring/SKILL.md) | Building and publishing a component |
-| [convex-security-check](skills/convex-security-check/SKILL.md) | Ten minute pass before merge |
-| [convex-security-audit](skills/convex-security-audit/SKILL.md) | Full review before launch |
 
 ### Workflow
 
 | Skill | Use when |
 | --- | --- |
-| [project-workflow](skills/project-workflow/SKILL.md) | Multi step work. PRD first, task.md, lessons loop. |
-| [project-docs](skills/project-docs/SKILL.md) | Syncing changelog, files.md, task.md from git evidence |
+| [workflow](skills/workflow/SKILL.md) | Multi step work. Triage, PRD, `task.md`, docs sync, lessons loop |
+| [create-prd](skills/create-prd/SKILL.md) | Before a multi file feature, a schema change, or a hard bug |
+| [update-project-docs](skills/update-project-docs/SKILL.md) | A change landed. `/update` syncs the three docs from git and prints the commit message |
 | [git-safety](skills/git-safety/SKILL.md) | Any git command that could discard work |
 | [avoid-feature-creep](skills/avoid-feature-creep/SKILL.md) | Scope is drifting past the request |
+| [what-i-need-from-you](skills/what-i-need-from-you/SKILL.md) | Every turn. Ends with the exact asks, logged by id in `prds/` |
+
+### Coding
+
+| Skill | Use when |
+| --- | --- |
+| [think-first](skills/think-first/SKILL.md) | A bug, a fix that did not work, or a vague request. Root cause first |
+| [dev](skills/dev/SKILL.md) | Writing app code in my house style: React, Convex, Convex Auth, Resend. Edit it to make it yours |
+
+### Security
+
+| Skill | Use when |
+| --- | --- |
+| [sec-check](skills/sec-check/SKILL.md) | Before a deploy, before a repo goes public, after AI generated code, or to verify a fix |
+
+`sec-check` ships a secret scanner and a per function ledger in `scripts/`, then makes the agent prove an attacker path before it calls anything a finding. It covers leaked keys, client prefixed secrets, public functions with no auth, identity taken from args, paid AI spend, unsigned webhooks, open uploads, unsafe HTML, prompt injection into agent tools, and CI deploy keys. Every rule comes from a mistake that shipped.
+
+### Writing
+
+| Skill | Use when |
+| --- | --- |
+| [write](skills/write/SKILL.md) | Drafting or proofing posts, docs, READMEs, emails, and commit messages |
+
+## Project starters
+
+`npx builder-skills init` (or `y` at the last picker prompt) adds these to your project root. Nothing that exists is overwritten.
+
+| File | What it is |
+| --- | --- |
+| `AGENTS.md` (+ `CLAUDE.md` symlink) | Stack, commands, Convex rules, which skill to load when |
+| `task.md` | To Do, In Progress, Completed, with UTC timestamps |
+| `changelog.md` | Keep a Changelog. Dates from `git log`, never invented |
+| `files.md` | One line per file. What it is for |
+| `SECURITY.md` | What is public by design, who can do what, accepted risks. `sec-check` reads it first |
+| `prds/lessons.md` | One line per lesson. Read at session start |
+| `prds/what-i-need-from-you.md` | The asks log for `what-i-need-from-you` |
+
+## How I build with these
+
+The loop is short. Ask for the change. The agent triages, writes a PRD in `prds/`, builds against it, and moves the task through `task.md`. When it lands, `/update` reads the git evidence, syncs the three docs, and prints a commit message. Before a deploy, `sec-check`. I commit.
+
+A project run this way ends up with these next to the code:
+
+```
+prds/          one PRD per non trivial change, lessons.md, what-i-need-from-you.md
+task.md        what is queued, in flight, and done, with UTC timestamps
+changelog.md   what shipped, dated from git log
+files.md       what every file is for
+SECURITY.md    the policy sec-check checks against
+```
+
+## Why this exists next to the official Convex skills
+
+Convex's own skills know Convex best, so this repo no longer tries to. It covers the parts of shipping that are not Convex APIs: planning, tracking, docs that match the code, git habits, security review, and writing.
+
+## Moved in 3.0
+
+The Convex skills that used to live here moved to the official set. Each of the old folders below (except `convex`) still ships for one release as a short stub that names its replacement, so `npx skills update` tells you where to go. Run `npx builder-skills add <old-name>` and the CLI prints the replacement too. The old content is at [commit 82d1ce2](https://github.com/waynesutton/builder-skills/tree/82d1ce2/skills).
+
+| Old skill | Use instead |
+| --- | --- |
+| `convex` | official `convex` |
+| `convex-functions`, `convex-schema-validator`, `convex-realtime`, `convex-http-actions`, `convex-file-storage` | official `convex-design`, plus `convex/_generated/ai/guidelines.md` |
+| `convex-best-practices` | official `convex-reviewer`, `convex-optimize` |
+| `convex-cron-jobs` | official `convex-crons` |
+| `convex-migrations` | official `convex-migrate`, `convex-migrate-rehearse` |
+| `convex-agents` | official `convex-agent` |
+| `convex-component-authoring` | official `convex-create-component` |
+| `convex-security-check`, `convex-security-audit` | `sec-check`, plus official `convex-authz` |
+| `project-workflow` | `workflow` and `create-prd` |
+| `project-docs` | `update-project-docs` |
+| `help` (template) | `think-first` |
+
+Coming from the old npm package? See [MIGRATING.md](MIGRATING.md).
 
 ## How a skill is built
 
 ```
-skills/convex-http-actions/
-  SKILL.md                    under 300 lines. decision guide, one canonical example, mistakes, checklist
-  references/webhooks.md      loaded only when the task is a webhook
-  references/rest-and-cors.md loaded only when the task is a REST route
-  agents/openai.yaml          icon metadata for Codex
-  assets/                     icons
+skills/sec-check/
+  SKILL.md               under 300 lines: when to use it, the steps, the checklist
+  references/rules.md    loaded only when the task needs it
+  scripts/sec-scan.sh    run with bash, so file modes do not matter
+  agents/openai.yaml     icon metadata for Codex
+  assets/                icons
 ```
 
-Frontmatter is `name` and `description` only. The description is third person and ends with a `Use when ...` sentence, because that is what the agent reads to decide whether to load the skill. Everything else is progressive disclosure: metadata always, body on match, references on demand.
+Frontmatter is `name` and a quoted `description` only. The description says what the skill does and ends with a `Use when ...` sentence, because that is what the agent reads to decide whether to load it. Deep material sits one hop away in `references/`. This follows Anthropic's [skill authoring guide](https://github.com/anthropics/skills/tree/main/skills/skill-creator) and the [OpenCode skills docs](https://opencode.ai/docs/skills/).
 
-This follows the guidance in Anthropic's [Agent Skills overview](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview) and OpenAI's [Rethinking skills and prompts for GPT-6 Astra](https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra): short routers over long itineraries, triggers in the description, deep content one hop away.
+`skills/manifest.json` is the one list of skills, groups, and retired names. The CLI, `index.js`, and the lint read it.
 
 ## Programmatic use
 
 ```js
-import { listSkills, getSkill, getSkillMeta, SKILLS } from "@waynesutton/builder-skills";
+import { listSkills, getSkill, getSkillMeta, listRetired, GROUPS } from "@waynesutton/builder-skills";
 
-listSkills();                       // ["avoid-feature-creep", "convex", ...]
-getSkillMeta("convex-functions");   // { name, description }
-getSkill("git-safety");             // raw SKILL.md
+listSkills();                     // ["workflow", "create-prd", ...]
+getSkillMeta("sec-check");        // { name, description }
+getSkill("git-safety");           // raw SKILL.md
+listRetired();                    // [{ name, stub, replacement }]
 ```
 
 ## Repo layout
 
 ```
-skills/            the 17 skills
-templates/         starters installed by install-templates
-bin/cli.js         builder-skills CLI
-index.js           programmatic API
-scripts/           check-skills.mjs, run with npm run check
-.claude-plugin/    plugin.json and marketplace.json
-.codex/skills/     symlinks into skills/ so Codex finds them in this repo
-command/convex.md  OpenCode slash command
-prds/              PRDs for this repo and lessons.md
-AGENTS.md          agent context for this repo (CLAUDE.md symlinks here)
-GEMINI.md          Gemini CLI context
+skills/              the 10 skills, 12 retired stubs, manifest.json
+templates/           starters copied by init
+bin/cli.js           the CLI
+index.js             programmatic API
+packages/builder-skills/  the short npx name, forwards to the main package
+scripts/             check-skills.mjs (npm run check), the redirect package for the old npm name
+skills.sh.json       how the skills.sh page groups skills
+.claude-plugin/      plugin.json and marketplace.json
+.codex/skills/       symlinks into skills/ so Codex finds them in this repo
+prds/                PRDs for this repo and lessons.md
+AGENTS.md            agent context for this repo (CLAUDE.md symlinks here)
 ```
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md). Short version: keep `SKILL.md` under 300 lines, frontmatter is `name` + `description`, every reference file is linked, `npm run check` passes.
+Read [CONTRIBUTING.md](CONTRIBUTING.md). In short: keep `SKILL.md` under 300 lines, quote the description, link every reference file, and make sure `npm run check` passes.
 
 ## Related
 
 - [Convex docs](https://docs.convex.dev) and [llms.txt](https://docs.convex.dev/llms.txt)
-- [get-convex/convex-agent-plugins](https://github.com/get-convex/convex-agent-plugins), the official Convex skills
-- [get-convex/convex-hackathon-skill](https://github.com/get-convex/convex-hackathon-skill), evidence based build logs
-- [mattpocock/skills](https://github.com/mattpocock/skills), the repo whose shape this one borrows
-- [waynesutton/markdown-site](https://github.com/waynesutton/markdown-site), the Convex publishing framework behind waynesutton.ai
+- [convex/agent-skills](https://github.com/convex/agent-skills), the official Convex skills
+- [convex/convex-agent-plugins](https://github.com/convex/convex-agent-plugins), the official Convex plugins
+- [Convex agent setup](https://www.convex.dev/agent-setup.md)
 - [skills.sh](https://skills.sh), the installer
+- [ui-skills](https://www.ui-skills.com), the CLI shape this one borrows
 
 ## License
 

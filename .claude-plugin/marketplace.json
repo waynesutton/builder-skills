@@ -6,21 +6,28 @@
   },
   "metadata": {
     "description": "Skills by Wayne Sutton for builders shipping Convex apps.",
-    "version": "2.0.0"
+    "version": "3.0.0"
   },
   "plugins": [
     {
       "name": "builder-skills",
       "source": "./",
-      "description": "Convex patterns plus the PRD, task, changelog, and files.md workflow. 17 skills.",
-      "version": "2.0.0",
+      "description": "Workflow, security, and writing skills for builders shipping Convex apps. 10 skills.",
+      "version": "3.0.0",
       "author": {
         "name": "Wayne Sutton",
         "url": "https://waynesutton.ai"
       },
       "homepage": "https://github.com/waynesutton/builder-skills",
       "license": "Apache-2.0",
-      "keywords": ["convex", "skills", "prd", "changelog", "workflow"],
+      "keywords": [
+        "convex",
+        "skills",
+        "prd",
+        "workflow",
+        "security",
+        "writing"
+      ],
       "category": "development"
     }
   ]

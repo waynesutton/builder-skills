@@ -1,7 +1,7 @@
 {
   "name": "@waynesutton/builder-skills",
-  "version": "2.0.0",
-  "description": "Agent skills for builders shipping Convex apps. Convex patterns plus the PRD, task, changelog, and files.md workflow. Works with Claude Code, Codex, Cursor, OpenCode, and any agent that reads SKILL.md.",
+  "version": "3.0.0",
+  "description": "Workflow, security, and writing skills for builders shipping Convex apps: PRDs, task.md, docs synced from git, git safety, sec-check, and a writing guide. Run npx builder-skills. Works with Claude Code, Codex, Cursor, OpenCode, and any agent that reads SKILL.md.",
   "author": "Wayne Sutton <https://waynesutton.ai> (@waynesutton)",
   "license": "Apache-2.0",
   "repository": {
@@ -13,18 +13,19 @@
     "url": "https://github.com/waynesutton/builder-skills/issues"
   },
   "keywords": [
-    "convex",
     "builder-skills",
     "agent-skills",
     "skills",
+    "convex",
     "claude-code",
     "codex",
     "cursor",
     "opencode",
-    "llm",
-    "developer-tools",
     "prd",
     "changelog",
+    "workflow",
+    "security",
+    "writing",
     "skills-sh"
   ],
   "type": "module",
@@ -34,12 +35,13 @@
   },
   "files": [
     ".claude-plugin/",
+    "skills/manifest.json",
     "skills/**/*.md",
     "skills/**/agents/openai.yaml",
     "skills/**/assets/*",
+    "skills/**/scripts/*",
     "templates/**/*",
     "AGENTS.md",
-    "CLAUDE.md",
     "GEMINI.md",
     "index.js",
     "bin/"

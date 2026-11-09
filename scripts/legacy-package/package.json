@@ -1,0 +1,20 @@
+{
+  "name": "@waynesutton/convex-skills",
+  "version": "1.1.0",
+  "description": "Renamed to @waynesutton/builder-skills. Run npx builder-skills. Convex skills moved to github.com/convex/agent-skills.",
+  "author": "Wayne Sutton <https://waynesutton.ai> (@waynesutton)",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/waynesutton/builder-skills.git"
+  },
+  "homepage": "https://github.com/waynesutton/builder-skills/blob/main/MIGRATING.md",
+  "type": "module",
+  "bin": {
+    "convex-skills": "./bin/cli.js"
+  },
+  "files": ["bin/", "README.md"],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

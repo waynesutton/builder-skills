@@ -18,20 +18,27 @@ Open a GitHub issue at https://github.com/waynesutton/builder-skills/issues with
 Every skill in `skills/<name>/` follows the same shape.
 
 - `SKILL.md` frontmatter has exactly two keys: `name` and `description`. `name` matches the folder.
-- `description` is third person, says what the skill does, and includes a `Use when ...` sentence. Under 1024 characters.
-- `SKILL.md` body stays under 300 lines. Hard limit 500. Move deep material into `references/*.md` and link it from the body.
-- Every `references/*.md` file is linked from `SKILL.md`.
-- Code samples use the object form (`query({ args, returns, handler })`), validators on `args` and `returns`, and `withIndex` over `filter`.
-- Verify any Convex API you cite against https://docs.convex.dev/llms.txt.
+- Quote the `description`. An unquoted value containing `: ` breaks strict YAML parsers, and `npm run check` fails on it.
+- `description` is third person, says what the skill does, and ends with a `Use when ...` sentence. Under 1024 characters.
+- `SKILL.md` body stays under 300 lines. Hard limit 500. Move deep material into `references/*.md` and link it from the body. References do not link to each other.
+- Verify any Convex API you cite against https://docs.convex.dev/llms.txt. Convex API skills belong in the official set (https://github.com/convex/agent-skills), not here.
 - No emojis. No em dashes. No marketing words. `npm run check` flags the common ones.
 
 ## Adding a skill
 
-1. `mkdir skills/<name>` and write `SKILL.md`.
-2. Add `agents/openai.yaml` pointing at icons in `assets/` (copy from a sibling skill).
-3. Add the skill to `bin/cli.js`, `index.js`, and `.claude-plugin/plugin.json`. The check script fails if the three lists disagree with the folder.
-4. Add a row to the README table and `docs.md`.
-5. Run `ln -s ../../skills/<name> .codex/skills/<name>` so Codex finds it in this repo.
+1. Create `skills/<name>/SKILL.md`, plus `agents/openai.yaml` and `assets/` (copy from a sibling skill).
+2. Add an entry to `skills/manifest.json` with a group and a one line summary.
+3. Add it to `.claude-plugin/plugin.json` and `skills.sh.json`, add a row to the README table, and add it to `docs.md`.
+4. Run `ln -s ../../skills/<name> .codex/skills/<name>` so Codex finds it in this repo.
+5. Run `npm run check`. It fails if any of those lists disagree with the manifest.
+
+## Trying the CLI locally
+
+```bash
+node bin/cli.js                         # the picker
+node bin/cli.js add --all --dir /tmp/try
+node bin/cli.js list --json
+```
 
 ## Commit messages
 

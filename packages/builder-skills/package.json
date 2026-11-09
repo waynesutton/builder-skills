@@ -1,0 +1,24 @@
+{
+  "name": "builder-skills",
+  "version": "3.0.0",
+  "description": "Short name for @waynesutton/builder-skills. Run npx builder-skills to pick workflow, security, and writing skills for your coding agent.",
+  "author": "Wayne Sutton <https://waynesutton.ai> (@waynesutton)",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/waynesutton/builder-skills.git",
+    "directory": "packages/builder-skills"
+  },
+  "homepage": "https://github.com/waynesutton/builder-skills#readme",
+  "type": "module",
+  "bin": {
+    "builder-skills": "./cli.js"
+  },
+  "files": ["cli.js", "README.md"],
+  "dependencies": {
+    "@waynesutton/builder-skills": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
