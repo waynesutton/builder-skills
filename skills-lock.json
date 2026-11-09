@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "write": {
+      "source": "waynesutton/builder-skills",
+      "sourceType": "github",
+      "skillPath": "skills/write/SKILL.md",
+      "computedHash": "5862a2380acc6129e780e6564ccd8114154bddaca6e54212f4dc557e6ae8dbae"
+    }
+  }
+}

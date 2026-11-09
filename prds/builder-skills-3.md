@@ -51,7 +51,7 @@ Convex ships about 40 official skills (`convex/agent-skills`), plugins for Claud
 7. `init` twice: the second run skips every file. Done.
 8. Pack both tarballs, install them in a temp project, `npx builder-skills -v` and `add`: works. Done.
 9. sec-check scripts run on a sample repo, and the diff against the source shows only the name changes. Done.
-10. After the push: `npx skills update` on an old `convex-functions` install receives the stub. Pending.
+10. After the push: `npx skills update` on an old `convex-functions` install receives the stub. Done 2026-11-09.
 
 ## Out of scope
 

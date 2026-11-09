@@ -6,14 +6,9 @@ Three sections. Items move down as they land. An item moves to Completed only af
 
 Owner steps. Full commands in `MIGRATING.md`.
 
-- [ ] Review the 3.0 diff (`git status`, `git diff --stat`). Read README, MIGRATING.md, and `skills/sec-check/SKILL.md` first. Commit and push `main`.
-- [ ] Approve `prds/github-triage.md`, then the agent posts the comments and closes #4, #8, #11 and PRs #6, #9, #10.
-- [ ] `npm login`, then `npm publish --access public` for `@waynesutton/builder-skills` 3.0.0.
-- [ ] `cd packages/builder-skills && npm publish` for the `builder-skills` alias. If npm rejects the name, drop `npx builder-skills` from the docs.
-- [ ] `npm deprecate @waynesutton/convex-skills "Renamed to @waynesutton/builder-skills (npx builder-skills). Convex skills moved to github.com/convex/agent-skills"`.
+- [ ] `cd packages/builder-skills && npm publish` for the `builder-skills` alias, then approve its staged version on npmjs.com. If npm rejects the name, drop `npx builder-skills` from the docs.
 - [ ] Optional: publish `scripts/legacy-package/` as `@waynesutton/convex-skills` 1.1.0, then run the deprecate again.
-- [ ] After the push, run `npx skills add waynesutton/builder-skills --skill write -y` once so skills.sh reads `skills.sh.json`. Check the page groups.
-- [ ] After the push, in a scratch project with an old `convex-functions` install, run `npx skills update` and confirm it receives the stub.
+- [ ] Check https://www.skills.sh/waynesutton/builder-skills shows the Workflow, Coding, Security, Writing, and Moved groups once its cache refreshes.
 - [ ] Test `claude plugin marketplace add waynesutton/builder-skills` then `claude plugin install builder-skills@waynesutton`.
 - [ ] Update the link on waynesutton.ai.
 - [ ] 4.0: delete the 12 retired stub folders, set `stub: false` on their manifest entries, and drop them from `plugin.json` and `skills.sh.json`.
@@ -22,6 +17,14 @@ Owner steps. Full commands in `MIGRATING.md`.
 ## In Progress
 
 ## Completed
+
+- [x] 2026-11-09 Deprecated every version of `@waynesutton/convex-skills` with the rename notice. Verified: `npm view @waynesutton/convex-skills deprecated` shows it.
+
+- [x] 2026-11-09 08:10 UTC Published `@waynesutton/builder-skills` 3.0.0. First publish failed with E402 because scoped packages default to private; added `publishConfig.access: public`. npm staged the new package behind a `0.0.0-stage` placeholder; owner approved 3.0.0 on npmjs.com. Verified: `npm view` latest is 3.0.0; `npx @waynesutton/builder-skills@3.0.0 add --all` in a scratch dir installs 10 skills with `sec-check/scripts`; retired names print replacements. Ran one skills.sh install (found 22) so the page reads `skills.sh.json`.
+
+- [x] 2026-11-09 Confirmed stubs reach old installs. Scratch project with the 2.x `convex-functions` SKILL.md and its original lock entry (`skillPath` plus old hash); `npx skills update -p -y` (telemetry off) reported "Updated convex-functions" and the file is now the retired stub.
+
+- [x] 2026-11-09 GitHub triage, approved by owner after the 3.0 push (`9e56a51`). Closed #4 and #8 with comments, commented on #11 (already closed by #12), closed PRs #6, #9, #10 with comments, set the repo description and topics. `prds/github-triage.md`. Verified: `gh issue list` and `gh pr list` show nothing open.
 
 - [x] 2026-11-09 07:40 UTC builder-skills 3.0.0. `prds/builder-skills-3.md`. Convex API skills retired (12 stubs, `convex` deleted). New `sec-check`, `write`, `workflow`, `create-prd`, `update-project-docs`, `think-first`, `dev`, `what-i-need-from-you`. `skills/manifest.json`, CLI picker and commands, `packages/builder-skills` alias, `scripts/legacy-package`, `skills.sh.json`, `templates/SECURITY.md`, `templates/prds/what-i-need-from-you.md`, `MIGRATING.md`, lint rewrite, docs. Verified: `npm run check` 0 errors 0 warnings; `npx skills add <copy> --list` finds 22 with no skips; picker driven through a pty installs into the detected `.cursor`; `add --all --target claude,codex` writes 10 each; retired names print replacements and exit 1; `update` skips edited `dev`; `init` skips on rerun; packed tarballs install and `npx builder-skills` runs; sec-check scripts run on a sample.
 

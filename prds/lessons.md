@@ -12,3 +12,4 @@ One line per lesson. Newest at the bottom. Read this at the start of every sessi
 - 2026-11-09 Before deleting a popular skill, check how installers record it. skills.sh locks `skillPath` plus a hash, so a stub at the same path reaches existing installs on `npx skills update`. A deleted path reaches no one.
 - 2026-11-09 A skill named `help` cannot be called as `/help` in Claude Code, because the built-in wins. Check slash command names against built-ins.
 - 2026-11-09 npm skips symlinks, so `CLAUDE.md -> AGENTS.md` never shipped in the package even though `files` listed it. Check `npm pack --dry-run`, not the `files` list.
+- 2026-11-09 Scoped npm packages publish as private by default, so a plain `npm publish` fails with E402 Payment Required. Set `publishConfig.access: "public"` in package.json so the default is right.

@@ -1,9 +1,9 @@
 # GitHub triage for 3.0
 
 Created: 2026-11-09 07:40 UTC
-Status: Draft. Waiting for owner approval. Post only after the 3.0 commit is pushed to `main`, since the comments link to the new README and MIGRATING.md.
+Status: Done 2026-11-09. Posted after the 3.0 push (`9e56a51`). #11 was already closed by #12, so its comment went on with `gh issue comment`.
 
-Each item has the comment text and the exact command. Nothing here has been run.
+Each item has the comment text and the exact command that was run.
 
 ## #11 skills CLI skips 10 of 17 skills (close, completed)
 

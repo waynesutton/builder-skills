@@ -13,8 +13,14 @@
   "bin": {
     "convex-skills": "./bin/cli.js"
   },
-  "files": ["bin/", "README.md"],
+  "files": [
+    "bin/",
+    "README.md"
+  ],
   "engines": {
     "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

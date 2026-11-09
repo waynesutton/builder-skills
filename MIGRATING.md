@@ -92,16 +92,20 @@ Run these from the repo root after the 3.0 commit is on `main`.
 3. Publish the main package. This is the first publish under this name.
 
    ```bash
-   npm publish --access public --otp <code>
+   npm publish
    ```
+
+   `publishConfig.access` is `public`, so no flag is needed (without it, a scoped package fails with E402). npm stages a brand new package: it shows a `0.0.0-stage` placeholder until you approve the real version with 2FA in the Staged Packages tab on npmjs.com, or with `npm stage approve <id>`.
 
 4. Publish the short name. It depends on `@waynesutton/builder-skills@^3.0.0`, so it has to go second.
 
    ```bash
    cd packages/builder-skills
-   npm publish --otp <code>
+   npm publish
    cd ../..
    ```
+
+   This is also a new package, so approve its staged version on npmjs.com.
 
    If npm rejects `builder-skills` as too close to an existing name, skip this step and change `npx builder-skills` to `npx @waynesutton/builder-skills` in the README.
 
@@ -123,7 +127,7 @@ Run these from the repo root after the 3.0 commit is on `main`.
 
    ```bash
    cd scripts/legacy-package
-   npm publish --access public --otp <code>
+   npm publish
    cd ../..
    npm deprecate @waynesutton/convex-skills "Renamed to @waynesutton/builder-skills (npx builder-skills). Convex skills moved to github.com/convex/agent-skills"
    ```
