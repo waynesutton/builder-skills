@@ -15,7 +15,7 @@ One line per file that matters. What it is for, not how it works.
 - `files.md` this file
 - `task.md` To Do / In Progress / Completed with UTC timestamps
 - `LICENSE` Apache-2.0
-- `package.json` `@waynesutton/builder-skills` 3.0.1, binary `builder-skills`, `check` and `prepublishOnly` scripts
+- `package.json` `@waynesutton/builder-skills` 3.1.0, binary `builder-skills`, `check` and `prepublishOnly` scripts
 - `index.js` programmatic API: `listSkills`, `listRetired`, `getSkill`, `getSkillPath`, `getSkillDir`, `getSkillMeta`, `SKILLS`, `GROUPS`, `MANIFEST`
 - `skills.sh.json` groups on the skills.sh repo page: Workflow, Coding, Security, Writing, and the retired stubs
 - `.gitignore` ignores node_modules, env files, `.claude/`, `.cursor/`, `.opencode/`, `.agents/`
@@ -36,7 +36,7 @@ One line per file that matters. What it is for, not how it works.
 
 ## .claude-plugin/
 
-- `plugin.json` Claude Code plugin manifest, `builder-skills` 3.0.1, lists active skills and retired stubs
+- `plugin.json` Claude Code plugin manifest, `builder-skills` 3.1.0, lists active skills and retired stubs
 - `marketplace.json` marketplace manifest so `claude plugin marketplace add waynesutton/builder-skills` works
 
 ## .codex/
@@ -66,13 +66,15 @@ Each skill folder has `SKILL.md`, `agents/openai.yaml` (Codex icon metadata), an
 
 - `think-first/SKILL.md` reflect before acting, 98 percent confidence bar, Convex rules and docs, Convex Auth, scope, UI, docs policy, git handoff
 - `dev/SKILL.md` house style: core principles, Convex mutations and resources, Convex Auth, React, Resend, design system, docs, communication. Meant to be edited.
+- `state-machines/SKILL.md` report only audit of implicit state machines: what counts, the eight step audit, report format, fixing one machine at a time, hand offs to sec-check rule 21
+  - `references/problems.md` problem table with how to spot each and the fix, the transition helper, a before and after Convex example, a test for a move out of order
 
 ### Security
 
 - `sec-check/SKILL.md` modes, project policy first, scanner and ledger, the finding gate, severity, verify a fix, report format, run log, pre ship gate
-  - `references/rules.md` the 20 rules, component boundaries, AI generated code checks, common mistakes
+  - `references/rules.md` the 21 rules, component boundaries, AI generated code checks, common mistakes
   - `references/audit.md` full audit mode: run folder, recon, coverage units, hunt, verify, findings record
-  - `references/patterns.md` copy paste fixes 1 to 19, including the SECURITY.md template and an authz test
+  - `references/patterns.md` copy paste fixes 1 to 20, including the SECURITY.md template, an authz test, and a status transition helper
   - `references/probe.md` manual checks, probing your own deployment, GitHub secret scanning alerts
   - `scripts/sec-scan.sh` bash 3.2 secret and pattern scanner
   - `scripts/surface.cjs` per function ledger, `--json`, `--strict`, `--diff`

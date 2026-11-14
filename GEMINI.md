@@ -31,4 +31,4 @@ Do not run `npx convex deploy` or any git command that changes history without a
 
 ## Skills
 
-builder-skills covers the work around Convex: `workflow`, `create-prd`, `update-project-docs`, `git-safety`, `avoid-feature-creep`, `what-i-need-from-you`, `think-first`, `dev`, `sec-check`, and `write`. Run `npx builder-skills start` to see which one fits a task. Index: https://github.com/waynesutton/builder-skills
+builder-skills covers the work around Convex: `workflow`, `create-prd`, `update-project-docs`, `git-safety`, `avoid-feature-creep`, `what-i-need-from-you`, `think-first`, `dev`, `state-machines`, `sec-check`, and `write`. Run `npx builder-skills start` to see which one fits a task. Index: https://github.com/waynesutton/builder-skills

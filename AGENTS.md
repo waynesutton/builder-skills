@@ -4,7 +4,7 @@ Workflow, security, and writing skills for builders shipping Convex apps. This f
 
 ## What this repo is
 
-Ten active skills in `skills/<name>/`: six for running a project, two for how the agent codes, one security check, one writing guide. Twelve more folders are retired stubs that point to the official Convex skills. They ship for one release so `npx skills update` delivers the redirect, then go away in 4.0.
+Eleven active skills in `skills/<name>/`: six for running a project, three for how the agent codes, one security check, one writing guide. Twelve more folders are retired stubs that point to the official Convex skills. They ship for one release so `npx skills update` delivers the redirect, then go away in 4.0.
 
 `skills/manifest.json` is the one list of skills, groups, and retired names. The CLI (`bin/cli.js`), `index.js`, and the lint (`scripts/check-skills.mjs`) all read it.
 
@@ -69,5 +69,6 @@ prds/                             PRDs for this repo, lessons.md, archive/
 | `what-i-need-from-you` | ending a turn, or blocked on the user |
 | `think-first` | a bug, a failed fix, a vague request |
 | `dev` | writing app code in the house style |
+| `state-machines` | auditing status fields, a skipped step, a double run move |
 | `sec-check` | before deploy, a public repo, or after AI generated code |
 | `write` | READMEs, docs, posts, emails, commit messages |

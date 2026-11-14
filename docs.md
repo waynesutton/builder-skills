@@ -21,7 +21,7 @@ Where everything in this repo is documented.
 
 ## Skills
 
-Ten active skills. Each is `skills/<name>/SKILL.md`. Some have `references/` loaded on demand. The list lives in [skills/manifest.json](skills/manifest.json).
+Eleven active skills. Each is `skills/<name>/SKILL.md`. Some have `references/` loaded on demand. The list lives in [skills/manifest.json](skills/manifest.json).
 
 | Skill | Group | Use when | References |
 | --- | --- | --- | --- |
@@ -33,6 +33,7 @@ Ten active skills. Each is `skills/<name>/SKILL.md`. Some have `references/` loa
 | [what-i-need-from-you](skills/what-i-need-from-you/SKILL.md) | Workflow | Ending a turn, blocked on the user | |
 | [think-first](skills/think-first/SKILL.md) | Coding | A bug, a failed fix, a vague request | |
 | [dev](skills/dev/SKILL.md) | Coding | App code in the house style | |
+| [state-machines](skills/state-machines/SKILL.md) | Coding | Auditing status fields and flows | problems |
 | [sec-check](skills/sec-check/SKILL.md) | Security | Before deploy or a public repo | rules, audit, patterns, probe (+ scripts) |
 | [write](skills/write/SKILL.md) | Writing | Prose of any kind | formats, watchlist |
 

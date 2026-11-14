@@ -22,6 +22,8 @@ Copy these into a project when a finding needs a fix. Each pattern matches a rul
 16. Storage URLs and delete cascades
 17. CI deploy keys and pull requests
 18. SECURITY.md for a Convex app
+19. An authz regression test
+20. Status transitions checked on the server
 
 ## 1. Authed function builders
 
@@ -875,3 +877,69 @@ Rules:
 - Test three callers for each fixed function: the owner (works), another signed in user (throws), and nobody (throws).
 - `tokenIdentifier` in `withIdentity` must match the seeded users row, or every call fails for the wrong reason and the test proves nothing.
 - Add `"test": "vitest run"` and run it next to `npx tsc --noEmit` in CI. Install: `npm install -D convex-test vitest @edge-runtime/vm`, and set `environment: "edge-runtime"` in `vitest.config.ts`.
+
+## 20. Status transitions checked on the server
+
+Rule 21. One map of allowed moves, one helper, and named mutations that set a fixed status. The client never sends the new status.
+
+```ts
+// convex/lib/transitions.ts
+import { ConvexError } from "convex/values";
+
+const transitions = {
+  draft: ["pending"],
+  pending: ["paid", "cancelled"],
+  paid: ["refunded"],
+  cancelled: [],
+  refunded: [],
+} as const;
+
+export type OrderStatus = keyof typeof transitions;
+
+export function assertTransition(from: OrderStatus, to: OrderStatus) {
+  if (!(transitions[from] as readonly OrderStatus[]).includes(to)) {
+    throw new ConvexError({ code: "INVALID_TRANSITION", from, to });
+  }
+}
+```
+
+The owner can submit. The mutation reads the row, checks the owner, checks the move, and writes, all in one transaction:
+
+```ts
+// convex/orders.ts
+export const submit = authedMutation({
+  args: { orderId: v.id("orders") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const order = await ctx.db.get(args.orderId);
+    if (!order || order.userId !== ctx.user._id) {
+      throw new ConvexError({ code: "NOT_FOUND" });
+    }
+    assertTransition(order.status, "pending");
+    await ctx.db.patch(args.orderId, { status: "pending" });
+    return null;
+  },
+});
+```
+
+Money moves are internal. Only the verified webhook (pattern 6) calls this one. The early return makes a replayed webhook harmless, and the receipt email is scheduled from the same mutation, so it is sent only if the status change commits:
+
+```ts
+// convex/orders.ts
+export const markPaid = internalMutation({
+  args: { orderId: v.id("orders"), paymentId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const order = await ctx.db.get(args.orderId);
+    if (!order) throw new ConvexError({ code: "NOT_FOUND" });
+    // Replayed event: already paid, do nothing and send nothing
+    if (order.status === "paid") return null;
+    assertTransition(order.status, "paid");
+    await ctx.db.patch(args.orderId, { status: "paid", paymentId: args.paymentId });
+    await ctx.scheduler.runAfter(0, internal.emails.sendReceipt, { orderId: args.orderId });
+    return null;
+  },
+});
+```
+
+Type the field as a union of literals in the schema (`v.union(v.literal("draft"), v.literal("pending"), ...)`) so a typo cannot create a sixth state. Add a `convex-test` case that calls a move out of order and expects it to throw, the same way pattern 19 tests a second user.

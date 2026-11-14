@@ -174,6 +174,7 @@ function startCommand(projectDir) {
     ["Blocked on the user, or ending a turn", "what-i-need-from-you"],
     ["A bug, a failed fix, or a vague request", "think-first"],
     ["Writing app code in this house style", "dev"],
+    ["Auditing status fields, skipped steps, or double run moves", "state-machines"],
     ["Before deploy, a public repo, or after AI generated code", "sec-check"],
     ["Posts, docs, READMEs, emails, commit messages", "write"],
   ];

@@ -14,6 +14,7 @@
     { "name": "what-i-need-from-you", "group": "workflow", "summary": "End each turn with the exact asks, logged by id" },
     { "name": "think-first", "group": "coding", "summary": "Root cause first, 98 percent confidence bar, minimal scope" },
     { "name": "dev", "group": "coding", "summary": "House style for React, Convex, Convex Auth. Edit it.", "editable": true },
+    { "name": "state-machines", "group": "coding", "summary": "Find implicit state machines, report moves and problems" },
     { "name": "sec-check", "group": "security", "summary": "Secret scan, function ledger, attacker path gate, fixes" },
     { "name": "write", "group": "writing", "summary": "Draft, proof, and audit prose in your voice" }
   ],

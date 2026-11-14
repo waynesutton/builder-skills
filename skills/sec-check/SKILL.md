@@ -1,11 +1,11 @@
 ---
 name: sec-check
-description: "Security check and audit for Convex apps and any app with a React, Vite, Next.js, or Expo frontend, built from real incidents across shipped repos. Runs a secret scanner plus a per function surface ledger, then gates every candidate finding on a real attacker path before it gets a severity. Covers leaked keys, client prefixed secrets, public functions with no auth, caller identity taken from args, paid AI and AI Gateway spend, unsigned webhooks, open uploads, unsafe HTML, prompt injection into agent tools, component boundaries, derived data that outlives its source, unbounded reads, and CI deploy keys. Use before any deploy, before making a repo public, when adding AI, webhooks, uploads, env vars, admin features, or agent tools, when reviewing AI generated code or a PR, when checking whether a security fix worked, or when the user says sec check, security check, security audit, pen test, find vulnerabilities, verify the fix, or is this safe to ship."
+description: "Security check and audit for Convex apps and any app with a React, Vite, Next.js, or Expo frontend, built from real incidents across shipped repos. Runs a secret scanner plus a per function surface ledger, then gates every candidate finding on a real attacker path before it gets a severity. Covers leaked keys, client prefixed secrets, public functions with no auth, caller identity taken from args, paid AI and AI Gateway spend, unsigned webhooks, open uploads, unsafe HTML, prompt injection into agent tools, component boundaries, derived data that outlives its source, status moves that skip steps, unbounded reads, and CI deploy keys. Use before any deploy, before making a repo public, when adding AI, webhooks, uploads, env vars, admin features, or agent tools, when reviewing AI generated code or a PR, when checking whether a security fix worked, or when the user says sec check, security check, security audit, pen test, find vulnerabilities, verify the fix, or is this safe to ship."
 ---
 
 # sec-check
 
-Every rule here comes from a mistake that already shipped to a public repo or a live URL. The scripts find candidates. You decide what is real by tracing an attacker path through the code.
+Nearly every rule here comes from a mistake that already shipped to a public repo or a live URL. The scripts find candidates. You decide what is real by tracing an attacker path through the code.
 
 ## The one idea
 
@@ -157,7 +157,7 @@ The best proof is a test that stays in the repo. With `convex-test`, seed a row 
 
 ## The rules
 
-Twenty rules, each from a real incident. Read the full rule in [references/rules.md](references/rules.md) before you fix or reject a finding. It also covers component boundaries, checks for AI generated code, a before and after fix, and common mistakes.
+Twenty one rules. The first twenty each come from a real incident. Read the full rule in [references/rules.md](references/rules.md) before you fix or reject a finding. It also covers component boundaries, checks for AI generated code, a before and after fix, and common mistakes.
 
 | # | Rule | # | Rule |
 | --- | --- | --- | --- |
@@ -171,6 +171,7 @@ Twenty rules, each from a real incident. Read the full rule in [references/rules
 | 8 | Agent tools that act need the owner | 18 | CI and the supply chain are code |
 | 9 | Webhooks verify before they parse | 19 | Client sinks |
 | 10 | Uploads are typed, sized, and never served as pages | 20 | Auth config and ids |
+| | | 21 | Status moves are checked on the server |
 
 ## Not findings
 
@@ -257,6 +258,7 @@ The log stays outside the repo because open findings in a public repo are a map 
 - [ ] Paid calls run behind auth or IP keyed limits plus a global ceiling, and spend caps plus usage limits are set
 - [ ] Seed, setup, migration, debug, and agent side effect functions are internal
 - [ ] Webhooks verify signatures before parsing
+- [ ] Status fields move only through allowed transitions, checked on the server, and never take the new status from args
 - [ ] Uploads check type and size on the server, and storage URLs go only to allowed callers
 - [ ] User HTML and model output are sanitized and a CSP is set
 - [ ] Convex lint plugin runs in CI
@@ -264,8 +266,8 @@ The log stays outside the repo because open findings in a public repo are a map 
 
 ## Resources
 
-- [references/rules.md](references/rules.md): the 20 rules, component boundaries, AI generated code checks
-- [references/patterns.md](references/patterns.md): fix code for each rule, the `SECURITY.md` template, an authz regression test
+- [references/rules.md](references/rules.md): the 21 rules, component boundaries, AI generated code checks
+- [references/patterns.md](references/patterns.md): fix code for each rule, the `SECURITY.md` template, an authz regression test, a status transition helper
 - [references/audit.md](references/audit.md): full audit mode
 - [references/probe.md](references/probe.md): manual checks, deployment probes, GitHub secret scanning alerts
 - Convex docs index: https://docs.convex.dev/llms.txt. Auth in functions: https://docs.convex.dev/auth/functions-auth. Internal functions: https://docs.convex.dev/functions/internal-functions. Linting: https://docs.convex.dev/linting. Usage limits: https://docs.convex.dev/production/usage-limits. AI Gateway: https://docs.convex.dev/ai-gateway/setup. Testing: https://docs.convex.dev/testing/convex-test

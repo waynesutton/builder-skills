@@ -1,6 +1,6 @@
 # Rules
 
-Every rule comes from a mistake that already shipped. Each one names the incident, then the rule. Fix code for each rule is in the patterns reference.
+Rules 1 to 20 come from mistakes that already shipped. Where an incident is on record, the rule names it first. Rule 21 comes from an audit pattern and has no incident on record yet. Fix code for each rule is in the patterns reference.
 
 ## Contents
 
@@ -24,6 +24,7 @@ Every rule comes from a mistake that already shipped. Each one names the inciden
 - 18. CI and the supply chain are code
 - 19. Client sinks
 - 20. Auth config and ids
+- 21. Status moves are checked on the server
 - Component boundaries
 - AI generated code checks
 - One fix, before and after (rule 3)
@@ -204,6 +205,24 @@ Abuse that does not leak data can still take an app down or run up a bill.
 - `convex/auth.config.ts` sets `applicationID` for every provider. Without it Convex skips the `aud` check, so a token minted for another app on a shared issuer like `accounts.google.com` signs in to yours.
 - Key users on `tokenIdentifier` (issuer plus subject) when more than one provider is configured. `subject` alone can collide.
 - Use explicit table ids: `ctx.db.get("tasks", id)`. The `explicit-table-ids` lint rule and `npx @convex-dev/codemod@latest explicit-ids` convert old calls. It stops an id from one table being passed where another was expected.
+
+## 21. Status moves are checked on the server
+
+No incident on record yet. This one comes from auditing status fields, not from a leak.
+
+A `status` field, or a set of booleans that act like one, is a state machine even when no file says so. Every public mutation that moves it is an endpoint that can skip steps.
+
+- Find the implicit machines first. Grep the schema and functions for fields named `status`, `state`, `stage`, `phase`, `step`, and boolean groups like `isPaid`, `isApproved`, `isPublished`, `isRefunded`. List every function that writes each one and the move it makes.
+- Every write checks the current value before it changes it. `pending` to `paid` is allowed, `draft` to `refunded` is not. Keep the allowed moves in one map and call one helper that throws on a move not in the map.
+- The new status never comes straight from args. A mutation named `approve` sets `approved`. A generic `setStatus(id, status)` mutation breaks rule 3 and rule 4 at once: anyone can approve their own request or mark their own order paid.
+- Check who may make each move, not only that the caller is signed in. The owner submits, an admin approves, only the verified payment webhook (rule 9) marks paid. Money and approval moves run from internal functions or verified webhooks, never a public mutation.
+- One time moves are idempotent. Refund, payout, redeem, claim, and send check the status and set it in the same mutation, so a double click or a replayed request cannot run them twice. A Convex mutation is a transaction. Do the read and the write in one mutation, never a read in an action followed by a write in a later mutation.
+- Side effects follow the committed move. Schedule the email, payout, or AI call from the mutation that changed the status, after the check passes. A function scheduled from a mutation runs only if that mutation commits. Never fire the side effect from the client.
+- Boolean groups get one source of truth. If `isApproved` and `isRejected` can both be true, replace them with one `status` field or reject the impossible pair on write.
+- A status change reaches every derived copy through rule 16.
+- For the full map of every machine, including bugs and design gaps with no attacker path, run the `state-machines` skill. Only moves an attacker can reach are findings here.
+
+Finding gate: an attacker calls the mutation with `curl` and lands the row in a state the UI never allows, or runs a one time move twice. Report the start state, the call, and the end state. A missing transition map with no reachable bad move is a hardening note, not a finding.
 
 ## Component boundaries
 

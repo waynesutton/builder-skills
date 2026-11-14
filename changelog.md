@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-11-13
+
+### Added
+
+- `state-machines` skill: a report only audit that finds implicit state machines (status fields, boolean groups, timestamp flags, flows across mutations, webhooks, and crons), lists every state, every move, who can trigger it, and the problems, then proposes a transition map. Security hits hand off to `sec-check` rule 21.
+- `sec-check` rule 21, status moves are checked on the server: find implicit state machines (`status` fields and boolean groups), check the current value before every move, never take the new status from args, keep money and approval moves internal, make one time moves idempotent, and schedule side effects from the mutation that commits the move. Fix pattern 20 has the transition map helper. New pre ship gate line.
+
+### Fixed
+
+- README agent list spacing.
+
 ## [3.0.1] - 2026-11-09
 
 ### Changed

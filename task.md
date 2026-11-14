@@ -6,7 +6,7 @@ Three sections. Items move down as they land. An item moves to Completed only af
 
 Owner steps. Full commands in `MIGRATING.md`.
 
-- [ ] Commit and push 3.0.1, then `npm publish` from the repo root and approve it in Staged Packages on npmjs.com if npm stages it. The alias needs no republish.
+- [ ] Commit and push 3.1.0, then `npm publish` from the repo root. Approve it on npmjs.com if npm stages it. The alias needs no republish.
 - [ ] `cd packages/builder-skills && npm publish` for the `builder-skills` alias, then approve its staged version on npmjs.com. If npm rejects the name, drop `npx builder-skills` from the docs.
 - [ ] Optional: publish `scripts/legacy-package/` as `@waynesutton/convex-skills` 1.1.0, then run the deprecate again.
 - [ ] Check https://www.skills.sh/waynesutton/builder-skills shows the Workflow, Coding, Security, Writing, and Moved groups once its cache refreshes.
@@ -18,6 +18,8 @@ Owner steps. Full commands in `MIGRATING.md`.
 ## In Progress
 
 ## Completed
+
+- [x] 2026-11-13 builder-skills 3.1.0. New `state-machines` skill (11 active) and `sec-check` rule 21 with fix pattern 20, from the implicit state machines brief. Files: `skills/state-machines/`, `skills/sec-check/SKILL.md`, `references/rules.md`, `references/patterns.md`, `skills/manifest.json`, `plugin.json`, `marketplace.json`, `skills.sh.json`, `bin/cli.js`, README, AGENTS.md, GEMINI.md, docs.md, files.md, changelog.md. Verified: `npm run check` 0 errors; `node bin/cli.js list` shows 11; `add state-machines` installs the folder with `references/problems.md`.
 
 - [x] 2026-11-09 Deprecated every version of `@waynesutton/convex-skills` with the rename notice. Verified: `npm view @waynesutton/convex-skills deprecated` shows it.
 

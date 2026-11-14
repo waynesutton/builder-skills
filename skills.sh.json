@@ -19,7 +19,8 @@
       "description": "How the agent thinks and writes code.",
       "skills": [
         "think-first",
-        "dev"
+        "dev",
+        "state-machines"
       ]
     },
     {

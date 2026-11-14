@@ -6,7 +6,7 @@
 
 Workflow, building, and writing skills for builders shipping Convex apps. By [Wayne Sutton](https://waynesutton.ai).
 
-Ten skills that teach a coding agent how to run a project: triage before code, write a PRD, keep `task.md`, `changelog.md`, and `files.md` true from git, never run a git command that destroys work, check security before you ship, and write like you. They work with Threadbear,Claude Code, Codex, Cursor, OpenCode, and any agent that reads a `SKILL.md`.
+Eleven skills that teach a coding agent how to run a project: triage before code, write a PRD, keep `task.md`, `changelog.md`, and `files.md` true from git, never run a git command that destroys work, check security before you ship, and write like you. They work with Threadbear, Claude Code, Codex, Cursor, OpenCode, and any agent that reads a `SKILL.md`.
 
 ```bash
 npx builder-skills
@@ -117,6 +117,7 @@ claude plugin install builder-skills@waynesutton
 | --- | --- |
 | [think-first](skills/think-first/SKILL.md) | A bug, a fix that did not work, or a vague request. Root cause first |
 | [dev](skills/dev/SKILL.md) | Writing app code in my house style: React, Convex, Convex Auth, Resend. Edit it to make it yours |
+| [state-machines](skills/state-machines/SKILL.md) | Auditing status fields and flows. Reports every state, every move, who can make it, and what is wrong |
 
 ### Security
 
@@ -213,7 +214,7 @@ listRetired();                    // [{ name, stub, replacement }]
 ## Repo layout
 
 ```
-skills/              the 10 skills, 12 retired stubs, manifest.json
+skills/              the 11 skills, 12 retired stubs, manifest.json
 templates/           starters copied by init
 bin/cli.js           the CLI
 index.js             programmatic API

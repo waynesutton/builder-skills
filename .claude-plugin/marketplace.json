@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "Skills by Wayne Sutton for builders shipping Convex apps.",
-    "version": "3.0.1"
+    "version": "3.1.0"
   },
   "plugins": [
     {
       "name": "builder-skills",
       "source": "./",
-      "description": "Workflow, security, and writing skills for builders shipping Convex apps. 10 skills.",
-      "version": "3.0.1",
+      "description": "Workflow, security, and writing skills for builders shipping Convex apps. 11 skills.",
+      "version": "3.1.0",
       "author": {
         "name": "Wayne Sutton",
         "url": "https://waynesutton.ai"
